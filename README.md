@@ -6,6 +6,8 @@ Regeste batch-transcribes and describes scanned archival images (OCR + content d
 
 Built for work on archival record groups (for example the *3 U 794 "Le Corbeau"* fonds), multi-provider: **Claude, Gemini, OpenAI, and local models**.
 
+![Regeste screenshot](assets/screenshot.png)
+
 > **Command-line usage:** see the dedicated guide **[cli.md](cli.md)**.
 >
 > **Changes:** see the **[CHANGELOG](CHANGELOG.md)**.
