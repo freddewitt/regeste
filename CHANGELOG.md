@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] – 2026-07-14
+
+### Added
+- **Review tab, simple/advanced modes** — a always-visible simple view (enlarged image, transcription, image description, Validate/Reject/Hold buttons applying to the whole piece at once, "View image" opening the system viewer) with an "Advanced" checkbox revealing the existing per-field editors unchanged. The piece list shows a status dot per entry and is sorted pending → validated → rejected.
+- **Verbose diagnostic logging** — a "Verbose" checkbox in the Logs tab switches the logger to DEBUG, surfacing exhaustive request/response, retry, image-processing, and registry-write logs for troubleshooting. An always-visible warning now signals when OpenCV is missing and a requested preprocessing step was silently skipped.
+- **Translation tab, corpus-level batch launcher** — repositioned right after Review, before Export. Replaces the single-piece workbench with: target language, scope ("validated pieces only" or "all pieces"), an inline editable translation prompt, a progress bar, and a run log. Writes go through the same `translate_piece`/pivot mechanism as before, one worker thread per batch.
+- **Translation content in exports** — a "Language" selector in the Export tab includes the selected language's translation in CSV (light/full), XLSX, Markdown, Markdown (Obsidian), HTML, consultation PDF, and SQLite when available. EAD, Dublin Core, and METS now also list every available language (source + translations) via a `<language>` element.
+- **README screenshot** of the main window.
+
 ## [0.1.0] – 2026-07-14
 
 Initial development version.
