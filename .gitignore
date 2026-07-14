@@ -1,0 +1,39 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+build/
+dist/
+
+# Test & type-checker caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# OS
+.DS_Store
+
+# Regeste project files — may contain API keys in plain text; never commit
+regeste.json
+
+# Generated knowledge graph (regenerate with `graphify update .`)
+graphify-out/
+
+# Local tooling / assistant config — machine-specific, not part of the project
+.opencode/
+.tokensave/
+.claude/
+.graphifyignore
+
+# Session working notes, internal specs & assistant instructions — kept local
+manifest.md
+journal.md
+journal_archive.md
+journal.jsonl
+resume.md
+regeste-prompt-claude-code.md
+export_instruct.md
+AGENTS.md
+CLAUDE.md

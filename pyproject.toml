@@ -1,0 +1,37 @@
+[project]
+name = "regeste"
+version = "0.1.0"
+description = "Transcription et description d'archives par vision IA"
+requires-python = ">=3.11"
+readme = "README.md"
+dependencies = [
+    "anthropic>=0.40.0",
+    "google-genai>=0.3.0",
+    "openai>=1.50.0",
+    "pillow>=10.4.0",
+    "pillow-heif>=0.18.0",
+    "reportlab>=4.2.0",
+    "babel>=2.16.0",
+    "requests>=2.32.0",
+    "PySide6>=6.7.0",
+    "openpyxl>=3.1.0",
+]
+
+[project.optional-dependencies]
+preprocessing = ["opencv-python-headless>=4.10.0"]
+upscale = ["realesrgan"]
+dev = ["pytest>=8.0.0", "pytest-mock>=3.14.0", "pytest-qt>=4.4.0"]
+build = ["pyinstaller>=6.0"]
+
+[project.scripts]
+regeste = "regeste.__main__:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["regeste*"]
+
+[tool.setuptools.package-data]
+regeste = ["locale/*.pot", "locale/*/LC_MESSAGES/*.po", "locale/*/LC_MESSAGES/*.mo"]

@@ -1,0 +1,899 @@
+# Chinese translations for Regeste.
+# Copyright (C) 2026 Regeste
+# This file is distributed under the same license as the Regeste project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Regeste 0.1.0\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-07-12 01:15+0200\n"
+"PO-Revision-Date: 2026-07-11 19:39+0200\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: regeste/cli/app.py:99
+msgid "Invalid choice, try again."
+msgstr "选择无效，请重试。"
+
+#: regeste/cli/app.py:104 regeste/gui/main_window.py:181
+msgid "Source folder"
+msgstr "源文件夹"
+
+#: regeste/cli/app.py:108 regeste/gui/main_window.py:466
+#, python-brace-format
+msgid "Not a folder: {path}"
+msgstr "不是文件夹：{path}"
+
+#: regeste/cli/app.py:109 regeste/cli/app.py:149 regeste/cli/app.py:162
+#: regeste/cli/app.py:300
+msgid "Try again?"
+msgstr "重试？"
+
+#: regeste/cli/app.py:119
+#, python-brace-format
+msgid ""
+"Existing project found: {total} files ({ok} ok, {error} error, {pending} "
+"pending)"
+msgstr "找到现有项目：共 {total} 个文件（成功 {ok}，出错 {error}，待处理 {pending}）"
+
+#: regeste/cli/app.py:133
+msgid "Available providers:"
+msgstr "可用提供商："
+
+#: regeste/cli/app.py:136 regeste/gui/panels/review_panel.py:145
+#: regeste/gui/panels/translation_panel.py:80 regeste/gui/settings_dialog.py:97
+msgid "Provider"
+msgstr "提供商"
+
+#: regeste/cli/app.py:139 regeste/gui/panels/translation_panel.py:88
+#: regeste/gui/settings_dialog.py:110
+msgid "API key"
+msgstr "API 密钥"
+
+#: regeste/cli/app.py:141 regeste/gui/panels/translation_panel.py:85
+#: regeste/gui/settings_dialog.py:105
+msgid "Server URL"
+msgstr "服务器地址"
+
+#: regeste/cli/app.py:148 regeste/gui/settings_dialog.py:178
+#, python-brace-format
+msgid "Could not reach the provider: {error}"
+msgstr "无法连接到提供商：{error}"
+
+#: regeste/cli/app.py:154 regeste/gui/main_window.py:515
+#: regeste/gui/settings_dialog.py:169
+msgid "No vision model found for this provider."
+msgstr "未找到该提供商的视觉模型。"
+
+#: regeste/cli/app.py:157 regeste/cli/app.py:171
+msgid "Manually enter a model identifier (if not auto-detected)?"
+msgstr "手动输入模型标识符（如果未自动检测到）？"
+
+#: regeste/cli/app.py:160 regeste/cli/app.py:174
+msgid "Model identifier"
+msgstr "模型标识符"
+
+#: regeste/cli/app.py:166
+msgid "Available vision models:"
+msgstr "可用视觉模型："
+
+#: regeste/cli/app.py:176 regeste/gui/panels/review_panel.py:145
+#: regeste/gui/panels/translation_panel.py:92
+#: regeste/gui/settings_dialog.py:121 regeste/gui/settings_dialog.py:277
+msgid "Model"
+msgstr "模型"
+
+#: regeste/cli/app.py:182
+msgid "Enable deskew?"
+msgstr "启用倾斜校正？"
+
+#: regeste/cli/app.py:183
+msgid "Enable denoise?"
+msgstr "启用降噪？"
+
+#: regeste/cli/app.py:184
+msgid "Enable contrast enhancement?"
+msgstr "启用对比度增强？"
+
+#: regeste/cli/app.py:185
+msgid "Enable upscaling?"
+msgstr "启用放大？"
+
+#: regeste/cli/app.py:189
+msgid "Use quality upscaling (Real-ESRGAN if available)?"
+msgstr "使用高质量放大（若可用则使用 Real-ESRGAN）？"
+
+#: regeste/cli/app.py:197
+msgid "Disable adaptive resizing?"
+msgstr "禁用自适应缩放？"
+
+#: regeste/cli/app.py:199
+msgid "Override the maximum pixel dimension?"
+msgstr "覆盖最大像素尺寸？"
+
+#: regeste/cli/app.py:200
+msgid "Maximum pixel dimension"
+msgstr "最大像素尺寸"
+
+#: regeste/cli/app.py:202
+msgid "Override the maximum file size in bytes?"
+msgstr "覆盖最大文件大小（字节）？"
+
+#: regeste/cli/app.py:203
+msgid "Maximum file size in bytes"
+msgstr "最大文件大小（字节）"
+
+#: regeste/cli/app.py:210
+#, python-brace-format
+msgid "Available export formats: {formats}"
+msgstr "可用导出格式：{formats}"
+
+#: regeste/cli/app.py:211
+msgid "Export formats (comma-separated)"
+msgstr "导出格式（用逗号分隔）"
+
+#: regeste/cli/app.py:213
+msgid "Write a combined single-file export?"
+msgstr "写入合并的单文件导出？"
+
+#: regeste/cli/app.py:214
+msgid "Write a per-file export?"
+msgstr "写入逐文件导出？"
+
+#: regeste/cli/app.py:225
+msgid "Use the default system prompt?"
+msgstr "使用默认系统提示词？"
+
+#: regeste/cli/app.py:227
+msgid "Custom system prompt"
+msgstr "自定义系统提示词"
+
+#: regeste/cli/app.py:231 regeste/gui/main_window.py:176
+msgid "Project name"
+msgstr "项目名称"
+
+#: regeste/cli/app.py:232 regeste/gui/main_window.py:192
+msgid "Output folder"
+msgstr "输出文件夹"
+
+#: regeste/cli/app.py:236
+msgid "Force document language (optional)"
+msgstr "强制指定文档语言（可选）"
+
+#: regeste/cli/app.py:242 regeste/gui/settings_dialog.py:323
+msgid "Number of parallel workers"
+msgstr "并行工作进程数"
+
+#: regeste/cli/app.py:243
+msgid "Spend ceiling in $ (optional)"
+msgstr "支出上限（美元，可选）"
+
+#: regeste/cli/app.py:264
+#, python-brace-format
+msgid "~{amount}"
+msgstr "约 {amount}"
+
+#: regeste/cli/app.py:266 regeste/gui/main_window.py:264
+#: regeste/gui/main_window.py:606
+msgid "not enough data yet"
+msgstr "数据尚不足"
+
+#: regeste/cli/app.py:267
+#, python-brace-format
+msgid "{file} - {processed}/{total} - cost: {cost} - projected: {projected}"
+msgstr "{file} - {processed}/{total} - 费用：{cost} - 预计：{projected}"
+
+#: regeste/cli/app.py:282
+#, python-brace-format
+msgid "Done: {ok} ok, {error} error, {total} total - total cost: {cost}"
+msgstr "完成：成功 {ok}，出错 {error}，共 {total} 个 - 总费用：{cost}"
+
+#: regeste/cli/app.py:299 regeste/gui/main_window.py:521
+#, python-brace-format
+msgid "Provider unavailable: {error}"
+msgstr "提供商不可用：{error}"
+
+#: regeste/cli/app.py:322
+msgid ""
+"\n"
+"Stop requested - finishing in-flight tasks..."
+msgstr ""
+"\n"
+"已请求停止 - 正在完成进行中的任务……"
+
+#: regeste/cli/app.py:352
+msgid "Resume this project?"
+msgstr "继续此项目？"
+
+#: regeste/cli/app.py:359
+msgid "This will erase existing progress - confirm?"
+msgstr "此操作将清除现有进度 - 确认吗？"
+
+#: regeste/cli/app.py:361 regeste/cli/app.py:366 regeste/cli/app.py:376
+#: regeste/cli/app.py:396
+msgid "Aborted."
+msgstr "已中止。"
+
+#: regeste/cli/app.py:388 regeste/gui/main_window.py:565
+#, python-brace-format
+msgid "Files to process: {count}"
+msgstr "待处理文件数：{count}"
+
+#: regeste/cli/app.py:390 regeste/gui/main_window.py:566
+#, python-brace-format
+msgid "Rough cost estimate (heuristic, not a measurement): ~{amount}"
+msgstr "费用粗略估算（启发式估算，非精确测量）：约 {amount}"
+
+#: regeste/cli/app.py:394
+msgid "Start now?"
+msgstr "立即开始？"
+
+#: regeste/cli/app.py:400
+msgid "Run cancelled."
+msgstr "运行已取消。"
+
+#: regeste/cli/app.py:402 regeste/gui/main_window.py:531
+#: regeste/gui/main_window.py:532
+msgid "Nothing to process."
+msgstr "没有需要处理的内容。"
+
+#: regeste/cli/app.py:411 regeste/gui/main_window.py:639
+#: regeste/gui/main_window.py:640
+msgid "Exported files:"
+msgstr "已导出的文件："
+
+#: regeste/core/export.py:62 regeste/core/export.py:74
+#: regeste/core/export.py:131 regeste/gui/panels/review_panel.py:145
+msgid "Text"
+msgstr "文本"
+
+#: regeste/core/export.py:64 regeste/core/export.py:76
+#: regeste/core/export.py:131
+msgid "Description"
+msgstr "描述"
+
+#: regeste/core/providers/claude.py:56 regeste/core/providers/gemini.py:65
+#: regeste/core/providers/openai_compat.py:137
+#, python-brace-format
+msgid "Respond in the following language: {lang}"
+msgstr "请使用以下语言回复：{lang}"
+
+#: regeste/gui/main_window.py:77 regeste/gui/main_window.py:572
+msgid "Confirm"
+msgstr "确认"
+
+#: regeste/gui/main_window.py:78
+msgid ""
+"A project already exists in this folder - starting a new one will erase "
+"its progress. Continue?"
+msgstr "该文件夹中已存在项目 - 新建项目将清除其进度。是否继续？"
+
+#: regeste/gui/main_window.py:93
+msgid "Regeste"
+msgstr "Regeste"
+
+#: regeste/gui/main_window.py:138
+msgid "Language"
+msgstr "语言"
+
+#: regeste/gui/main_window.py:140 regeste/gui/settings_dialog.py:333
+msgid "Automatic (system language)"
+msgstr "自动（系统语言）"
+
+#: regeste/gui/main_window.py:150 regeste/gui/panels/review_panel.py:59
+#: regeste/gui/settings_dialog.py:72
+msgid "Transcription"
+msgstr "转录"
+
+#: regeste/gui/main_window.py:153 regeste/gui/main_window.py:202
+#: regeste/gui/panels/export_panel.py:103
+#: regeste/gui/panels/export_panel.py:143
+#: regeste/gui/panels/export_panel.py:148
+#: regeste/gui/panels/export_panel.py:171
+msgid "Export"
+msgstr "导出"
+
+#: regeste/gui/main_window.py:155
+msgid "Review"
+msgstr "审核"
+
+#: regeste/gui/main_window.py:157 regeste/gui/panels/translation_panel.py:119
+msgid "Translation"
+msgstr "翻译"
+
+#: regeste/gui/main_window.py:159
+msgid "Logs"
+msgstr "日志"
+
+#: regeste/gui/main_window.py:172
+msgid "Project"
+msgstr "项目"
+
+#: regeste/gui/main_window.py:184 regeste/gui/main_window.py:194
+#: regeste/gui/panels/export_panel.py:85
+msgid "Browse..."
+msgstr "浏览……"
+
+#: regeste/gui/main_window.py:204
+msgid "Combined (single file)"
+msgstr "合并（单个文件）"
+
+#: regeste/gui/main_window.py:206
+msgid "Per file"
+msgstr "逐文件"
+
+#: regeste/gui/main_window.py:220
+msgid "Mode"
+msgstr "模式"
+
+#: regeste/gui/main_window.py:222
+msgid "New"
+msgstr "新建"
+
+#: regeste/gui/main_window.py:223
+msgid "Resume"
+msgstr "继续"
+
+#: regeste/gui/main_window.py:234
+msgid "Launch"
+msgstr "启动"
+
+#: regeste/gui/main_window.py:237
+msgid "Stop"
+msgstr "停止"
+
+#: regeste/gui/main_window.py:240
+msgid "Settings..."
+msgstr "设置……"
+
+#: regeste/gui/main_window.py:255 regeste/gui/settings_dialog.py:73
+msgid "Costs"
+msgstr "费用"
+
+#: regeste/gui/main_window.py:257
+msgid "Current file"
+msgstr "当前文件"
+
+#: regeste/gui/main_window.py:260
+msgid "Total"
+msgstr "总计"
+
+#: regeste/gui/main_window.py:263
+msgid "Projected"
+msgstr "预计"
+
+#: regeste/gui/main_window.py:266
+msgid "Range (min/max per file)"
+msgstr "区间（每文件最小/最大）"
+
+#: regeste/gui/main_window.py:271 regeste/gui/panels/export_panel.py:115
+msgid "Log"
+msgstr "日志"
+
+#: regeste/gui/main_window.py:280
+msgid "Select the source folder"
+msgstr "选择源文件夹"
+
+#: regeste/gui/main_window.py:285
+msgid "Select the output folder"
+msgstr "选择输出文件夹"
+
+#: regeste/gui/main_window.py:377 regeste/gui/settings_dialog.py:329
+msgid "Interface language"
+msgstr "界面语言"
+
+#: regeste/gui/main_window.py:378
+msgid "Please wait for the current operation to finish before switching language."
+msgstr "请等待当前操作完成后再切换语言。"
+
+#: regeste/gui/main_window.py:462 regeste/gui/main_window.py:466
+#: regeste/gui/main_window.py:475 regeste/gui/main_window.py:515
+#: regeste/gui/main_window.py:521 regeste/gui/panels/review_panel.py:259
+msgid "Error"
+msgstr "错误"
+
+#: regeste/gui/main_window.py:462
+msgid "Choose a source folder first."
+msgstr "请先选择源文件夹。"
+
+#: regeste/gui/main_window.py:475
+msgid "No existing project found in this folder to resume."
+msgstr "在该文件夹中未找到可继续的现有项目。"
+
+#: regeste/gui/main_window.py:616 regeste/gui/main_window.py:617
+#, python-brace-format
+msgid "Run failed: {error}"
+msgstr "运行失败：{error}"
+
+#: regeste/gui/settings_dialog.py:64
+msgid "Settings"
+msgstr "设置"
+
+#: regeste/gui/settings_dialog.py:70
+msgid "Providers and models"
+msgstr "提供商与模型"
+
+#: regeste/gui/settings_dialog.py:71
+msgid "Images"
+msgstr "图像"
+
+#: regeste/gui/settings_dialog.py:74
+msgid "Advanced"
+msgstr "高级"
+
+#: regeste/gui/settings_dialog.py:116
+msgid "Fetch models"
+msgstr "获取模型"
+
+#: regeste/gui/settings_dialog.py:129
+msgid "Force this model identifier (if not auto-detected)"
+msgstr "强制使用此模型标识符（如果未自动检测到）"
+
+#: regeste/gui/settings_dialog.py:157
+msgid "Fetching models..."
+msgstr "正在获取模型……"
+
+#: regeste/gui/settings_dialog.py:186
+msgid "Provider size limits (informative)"
+msgstr "提供商大小限制（仅供参考）"
+
+#: regeste/gui/settings_dialog.py:192
+#, python-brace-format
+msgid "max {px}px / {mb:.0f} MB"
+msgstr "最大 {px}px / {mb:.0f} MB"
+
+#: regeste/gui/settings_dialog.py:199
+msgid "Resizing"
+msgstr "缩放"
+
+#: regeste/gui/settings_dialog.py:201
+msgid "Disable adaptive resizing"
+msgstr "禁用自适应缩放"
+
+#: regeste/gui/settings_dialog.py:206
+msgid "Override maximum pixel dimension"
+msgstr "覆盖最大像素尺寸"
+
+#: regeste/gui/settings_dialog.py:218
+msgid "Override maximum file size (bytes)"
+msgstr "覆盖最大文件大小（字节）"
+
+#: regeste/gui/settings_dialog.py:230
+msgid "Preprocessing chain"
+msgstr "预处理链"
+
+#: regeste/gui/settings_dialog.py:232
+msgid "Deskew"
+msgstr "倾斜校正"
+
+#: regeste/gui/settings_dialog.py:234
+msgid "Denoise"
+msgstr "降噪"
+
+#: regeste/gui/settings_dialog.py:236
+msgid "Contrast enhancement"
+msgstr "对比度增强"
+
+#: regeste/gui/settings_dialog.py:238
+msgid "Upscale"
+msgstr "放大"
+
+#: regeste/gui/settings_dialog.py:240
+msgid "Quality upscaling (Real-ESRGAN if available)"
+msgstr "高质量放大（若可用则使用 Real-ESRGAN）"
+
+#: regeste/gui/settings_dialog.py:261
+msgid "Force document language (optional, auto if empty)"
+msgstr "强制指定文档语言（可选，留空则自动检测）"
+
+#: regeste/gui/settings_dialog.py:264
+msgid "System prompt"
+msgstr "系统提示词"
+
+#: regeste/gui/settings_dialog.py:277
+msgid "Input $/M tokens"
+msgstr "输入 $/百万令牌"
+
+#: regeste/gui/settings_dialog.py:277
+msgid "Output $/M tokens"
+msgstr "输出 $/百万令牌"
+
+#: regeste/gui/panels/translation_panel.py:122
+#: regeste/gui/settings_dialog.py:284
+msgid "Add row"
+msgstr "添加行"
+
+#: regeste/gui/panels/translation_panel.py:124
+#: regeste/gui/settings_dialog.py:286
+msgid "Remove selected row"
+msgstr "删除所选行"
+
+#: regeste/gui/settings_dialog.py:293
+msgid "Enable spend ceiling"
+msgstr "启用支出上限"
+
+#: regeste/gui/settings_dialog.py:339
+msgid "Applies immediately when you click OK - no restart needed."
+msgstr "点击“确定”后立即生效，无需重启。"
+
+#: regeste/gui/panels/export_panel.py:55
+msgid "EAD (XML)"
+msgstr "EAD (XML)"
+
+#: regeste/gui/panels/export_panel.py:56
+msgid "Dublin Core (XML)"
+msgstr "Dublin Core (XML)"
+
+#: regeste/gui/panels/export_panel.py:57
+msgid "METS/PREMIS"
+msgstr "METS/PREMIS"
+
+#: regeste/gui/panels/export_panel.py:58
+msgid "CSV (light)"
+msgstr "CSV（精简）"
+
+#: regeste/gui/panels/export_panel.py:59
+msgid "CSV (full)"
+msgstr "CSV（完整）"
+
+#: regeste/gui/panels/export_panel.py:60
+msgid "XLSX"
+msgstr "XLSX"
+
+#: regeste/gui/panels/export_panel.py:61
+msgid "ZIP"
+msgstr "ZIP"
+
+#: regeste/gui/panels/export_panel.py:62
+msgid "Markdown"
+msgstr "Markdown"
+
+#: regeste/gui/panels/export_panel.py:63
+msgid "Markdown (Obsidian)"
+msgstr "Markdown (Obsidian)"
+
+#: regeste/gui/panels/export_panel.py:64
+msgid "SQLite"
+msgstr "SQLite"
+
+#: regeste/gui/panels/export_panel.py:65
+msgid "HTML"
+msgstr "HTML"
+
+#: regeste/gui/panels/export_panel.py:66
+msgid "Consultation PDF"
+msgstr "查阅版 PDF"
+
+#: regeste/gui/panels/export_panel.py:82
+msgid "Destination folder"
+msgstr "目标文件夹"
+
+#: regeste/gui/panels/export_panel.py:91
+msgid "Formats"
+msgstr "格式"
+
+#: regeste/gui/panels/export_panel.py:98
+msgid "Validated pieces only"
+msgstr "仅已验证文档"
+
+#: regeste/gui/panels/export_panel.py:105
+msgid "Export review journal"
+msgstr "导出审核记录"
+
+#: regeste/gui/panels/export_panel.py:120
+msgid "Select the destination folder"
+msgstr "选择目标文件夹"
+
+#: regeste/gui/panels/export_panel.py:143
+msgid "Select at least one format."
+msgstr "请至少选择一种格式。"
+
+#: regeste/gui/panels/export_panel.py:148
+#: regeste/gui/panels/export_panel.py:171
+msgid "No pivot data found for this project yet."
+msgstr "尚未找到此项目的枢纽数据。"
+
+#: regeste/gui/panels/export_panel.py:176
+msgid "Review journal"
+msgstr "审核记录"
+
+#: regeste/gui/panels/export_panel.py:199
+#: regeste/gui/panels/export_panel.py:200
+msgid "Export complete."
+msgstr "导出完成。"
+
+#: regeste/gui/panels/export_panel.py:207
+#: regeste/gui/panels/export_panel.py:208
+#, python-brace-format
+msgid "Export failed: {error}"
+msgstr "导出失败：{error}"
+
+#: regeste/gui/panels/log_panel.py:53
+msgid "Search in logs..."
+msgstr "在日志中搜索..."
+
+#: regeste/gui/panels/log_panel.py:56
+msgid "Search"
+msgstr "搜索"
+
+#: regeste/gui/panels/log_panel.py:59
+msgid "Copy all"
+msgstr "全部复制"
+
+#: regeste/gui/panels/review_panel.py:46
+msgid "Draft"
+msgstr "草稿"
+
+#: regeste/gui/panels/review_panel.py:47
+msgid "To review"
+msgstr "待审核"
+
+#: regeste/gui/panels/review_panel.py:48
+msgid "Validated"
+msgstr "已验证"
+
+#: regeste/gui/panels/review_panel.py:49
+msgid "Rejected"
+msgstr "已拒绝"
+
+#: regeste/gui/panels/review_panel.py:55
+msgid "Call number"
+msgstr "索书号"
+
+#: regeste/gui/panels/review_panel.py:56
+msgid "Date"
+msgstr "日期"
+
+#: regeste/gui/panels/review_panel.py:57
+msgid "Sender"
+msgstr "发件人"
+
+#: regeste/gui/panels/review_panel.py:58
+msgid "Recipient"
+msgstr "收件人"
+
+#: regeste/gui/panels/review_panel.py:77
+msgid "Queue"
+msgstr "队列"
+
+#: regeste/gui/panels/review_panel.py:79
+msgid "Auto-validation threshold"
+msgstr "自动验证阈值"
+
+#: regeste/gui/panels/review_panel.py:85
+msgid "Bulk-validate above threshold"
+msgstr "批量验证高于阈值的项"
+
+#: regeste/gui/panels/review_panel.py:88
+msgid "Sample size"
+msgstr "样本大小"
+
+#: regeste/gui/panels/review_panel.py:93
+msgid "Sample"
+msgstr "样本"
+
+#: regeste/gui/panels/review_panel.py:96
+msgid "Show all"
+msgstr "显示全部"
+
+#: regeste/gui/panels/review_panel.py:119
+msgid "Fields"
+msgstr "字段"
+
+#: regeste/gui/panels/review_panel.py:135
+msgid "Rejection note (required if a field is rejected)"
+msgstr "拒绝备注（如拒绝某字段则必填）"
+
+#: regeste/gui/panels/review_panel.py:137
+msgid "Save"
+msgstr "保存"
+
+#: regeste/gui/panels/review_panel.py:142
+msgid "OCR outputs (multi-provider comparison)"
+msgstr "OCR 输出（多提供商对比）"
+
+#: regeste/gui/panels/review_panel.py:147
+msgid "Promote selected output to transcription"
+msgstr "将所选输出提升为转录结果"
+
+#: regeste/gui/panels/review_panel.py:186
+msgid "Bulk validation"
+msgstr "批量验证"
+
+#: regeste/gui/panels/review_panel.py:186
+#: regeste/gui/panels/review_panel.py:188
+#, python-brace-format
+msgid "{count} piece(s) validated."
+msgstr "已验证 {count} 个文档。"
+
+#: regeste/gui/panels/review_panel.py:202
+#, python-brace-format
+msgid "{id} - fonds: {fonds} / série: {series}"
+msgstr "{id} - 全宗：{fonds} / 系列：{series}"
+
+#: regeste/gui/panels/review_panel.py:232
+msgid "No image"
+msgstr "无图像"
+
+#: regeste/gui/panels/translation_panel.py:78
+msgid "Translation provider"
+msgstr "翻译提供商"
+
+#: regeste/gui/panels/translation_panel.py:97
+msgid "Piece and target language"
+msgstr "文档与目标语言"
+
+#: regeste/gui/panels/translation_panel.py:99
+msgid "Validated piece"
+msgstr "已验证文档"
+
+#: regeste/gui/panels/translation_panel.py:102
+msgid "Target language"
+msgstr "目标语言"
+
+#: regeste/gui/panels/translation_panel.py:107
+msgid "Translate"
+msgstr "翻译"
+
+#: regeste/gui/panels/translation_panel.py:116
+msgid "Corpus glossary"
+msgstr "语料库词汇表"
+
+#: regeste/gui/panels/translation_panel.py:119
+msgid "Term"
+msgstr "术语"
+
+#: regeste/gui/panels/translation_panel.py:126
+msgid "Save glossary"
+msgstr "保存词汇表"
+
+#: regeste/gui/panels/translation_panel.py:221
+msgid "Glossary"
+msgstr "词汇表"
+
+#: regeste/gui/panels/translation_panel.py:221
+msgid "Glossary saved."
+msgstr "词汇表已保存。"
+
+#: regeste/gui/panels/translation_panel.py:232
+msgid "Translation blocked"
+msgstr "翻译已阻止"
+
+#: regeste/gui/panels/translation_panel.py:238
+msgid "Warning"
+msgstr "警告"
+
+#: regeste/gui/panels/translation_panel.py:239
+msgid "Continue anyway?"
+msgstr "仍要继续吗？"
+
+#: regeste/gui/panels/translation_panel.py:272
+msgid "Translation failed"
+msgstr "翻译失败"
+
+#: regeste/gui/panels/translation_panel.py:273
+#, python-brace-format
+msgid "Translation failed: {error}"
+msgstr "翻译失败：{error}"
+
+#: regeste/gui/panels/translation_panel.py
+msgid "Use the same provider/model as OCR"
+msgstr "使用与 OCR 相同的提供商/模型"
+
+#: regeste/gui/panels/translation_panel.py
+msgid "No translation model is configured."
+msgstr "尚未配置翻译模型。"
+
+#: regeste/gui
+msgid "Reset to default"
+msgstr "恢复默认"
+
+#: regeste/gui
+msgid "OCR prompt"
+msgstr "OCR 提示词"
+
+#: regeste/gui
+msgid "Edit OCR prompt..."
+msgstr "编辑 OCR 提示词..."
+
+#: regeste/gui
+msgid "Translation model"
+msgstr "翻译模型"
+
+#: regeste/gui
+msgid "Use the same model for translation"
+msgstr "翻译使用相同的模型"
+
+#: regeste/gui
+msgid "Source language"
+msgstr "源语言"
+
+#: regeste/gui
+msgid "auto-detected"
+msgstr "自动检测"
+
+#: regeste/gui
+msgid "Edit translation prompt..."
+msgstr "编辑翻译提示词..."
+
+#: regeste/gui
+msgid "Translation prompt"
+msgstr "翻译提示词"
+
+#: regeste/gui
+msgid "Removing {entites_a_preserver} or {glossaire} disables the injection of named entities and the glossary into the prompt."
+msgstr "删除 {entites_a_preserver} 或 {glossaire} 会禁用将命名实体和词汇表注入提示词。"
+
+#: regeste/cli/app.py
+msgid "Use the same model for translation?"
+msgstr "翻译使用相同的模型吗？"
+
+#: regeste/cli/app.py
+msgid "Use the default translation prompt?"
+msgstr "使用默认翻译提示词吗？"
+
+#: regeste/cli/app.py
+msgid "Custom translation prompt"
+msgstr "自定义翻译提示词"
+
+#: regeste/cli/app.py
+msgid "Translate the transcribed pieces now?"
+msgstr "现在翻译已转录的文档吗？"
+
+#: regeste/cli/app.py
+msgid "Target language (e.g. en, de, fr)"
+msgstr "目标语言（例如 en、de、fr）"
+
+#: regeste/cli/app.py
+msgid "Warning: translating raw OCR without human review."
+msgstr "警告：正在翻译未经人工校对的原始 OCR。"
+
+#: regeste/cli/app.py
+#, python-brace-format
+msgid "Translated {ok} piece(s), {error} error(s)."
+msgstr "已翻译 {ok} 个文档，{error} 个错误。"
+
+#: regeste/cli/app.py
+msgid "Target language(s), comma-separated (e.g. en, de)"
+msgstr "目标语言（用逗号分隔，例如 en, de）"
+
+#: regeste/cli/app.py
+msgid "Modify the project settings?"
+msgstr "修改项目设置吗？"
+
+#: regeste/cli/app.py
+msgid "Available models:"
+msgstr "可用模型："
+
+#: regeste/cli/app.py
+msgid "Export to archival formats now?"
+msgstr "现在导出为档案格式吗？"
+
+#: regeste/cli/app.py
+#, python-brace-format
+msgid "Available archival formats: {formats}"
+msgstr "可用档案格式：{formats}"
+
+#: regeste/cli/app.py
+msgid "Archival formats (comma-separated)"
+msgstr "档案格式（用逗号分隔）"
+
+#~ msgid ""
+#~ "The interface language has been saved"
+#~ " ({language}). Restart Regeste for the "
+#~ "change to fully apply everywhere."
+#~ msgstr "界面语言已保存（{language}）。请重启 Regeste 以使更改在各处完全生效。"
+
+#~ msgid ""
+#~ "Restarting the application is required "
+#~ "for the new language to fully "
+#~ "apply everywhere."
+#~ msgstr "需要重启应用程序，新语言才能在各处完全生效。"
+
