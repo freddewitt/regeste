@@ -148,3 +148,9 @@ pytest
 ```
 
 The tests make **no real API calls**: all providers are mocked.
+
+---
+
+## License
+
+Released under the [MIT License](LICENSE).
