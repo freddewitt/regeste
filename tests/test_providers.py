@@ -1,5 +1,6 @@
 """Provider tests — third-party SDKs are always mocked, no real network calls."""
 
+import logging
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -64,6 +65,26 @@ def test_claude_provider_transcribe_parses_the_result():
     assert result.tokens_in == 42
     assert result.tokens_out == 7
     assert result.model == "claude-sonnet-5"
+
+
+def test_claude_provider_transcribe_logs_debug_request_and_response(caplog):
+    """Verbose mode (Logs tab) surfaces provider request/response details at DEBUG —
+    check the API key itself never ends up in a log line.
+    """
+    provider = ClaudeProvider(api_key="super-secret-key")
+    provider._client = MagicMock()
+    provider._client.messages.create.return_value = SimpleNamespace(
+        content=[SimpleNamespace(type="text", text="## TEXT\nHello")],
+        usage=SimpleNamespace(input_tokens=42, output_tokens=7),
+    )
+
+    with caplog.at_level(logging.DEBUG, logger="regeste.core.providers.claude"):
+        provider.transcribe(b"fake-bytes", model="claude-sonnet-5", prompt="Transcribe.")
+
+    messages = " | ".join(caplog.messages)
+    assert "claude-sonnet-5" in messages
+    assert "tokens_in=42" in messages and "tokens_out=7" in messages
+    assert "super-secret-key" not in messages
 
 
 def test_gemini_provider_filters_generatecontent_and_excludes_text_only():
@@ -157,8 +178,8 @@ def test_ollama_lists_only_models_with_vision_capability(monkeypatch):
         capabilities = ["vision", "completion"] if json["model"] == "qwen2.5vl" else ["completion"]
         return SimpleNamespace(raise_for_status=lambda: None, json=lambda: {"capabilities": capabilities})
 
-    monkeypatch.setattr("regeste.core.providers.openai_compat.requests.get", fake_get)
-    monkeypatch.setattr("regeste.core.providers.openai_compat.requests.post", fake_post)
+    mock_session = SimpleNamespace(get=fake_get, post=fake_post)
+    provider._session = mock_session
 
     models = provider.list_vision_models()
 
@@ -178,8 +199,8 @@ def test_ollama_caches_api_show_responses(monkeypatch):
         show_calls.append(json["model"])
         return SimpleNamespace(raise_for_status=lambda: None, json=lambda: {"capabilities": ["vision"]})
 
-    monkeypatch.setattr("regeste.core.providers.openai_compat.requests.get", fake_get)
-    monkeypatch.setattr("regeste.core.providers.openai_compat.requests.post", fake_post)
+    mock_session = SimpleNamespace(get=fake_get, post=fake_post)
+    provider._session = mock_session
 
     provider.list_vision_models()
     provider.list_vision_models()
@@ -202,13 +223,14 @@ def test_ollama_vision_cache_survives_across_provider_instances(monkeypatch):
         show_calls.append(json["model"])
         return SimpleNamespace(raise_for_status=lambda: None, json=lambda: {"capabilities": ["vision"]})
 
-    monkeypatch.setattr("regeste.core.providers.openai_compat.requests.get", fake_get)
-    monkeypatch.setattr("regeste.core.providers.openai_compat.requests.post", fake_post)
+    mock_session = SimpleNamespace(get=fake_get, post=fake_post)
 
     first = OpenAICompatProvider(base_url="http://localhost:11434/v1", kind="ollama")
+    first._session = mock_session
     first.list_vision_models()
 
     second = OpenAICompatProvider(base_url="http://localhost:11434/v1", kind="ollama")
+    second._session = mock_session
     second.list_vision_models()
 
     assert show_calls == ["qwen2.5vl"]  # /api/show hit only once across both instances

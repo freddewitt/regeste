@@ -96,8 +96,19 @@ def _render_json(entries: list[tuple[str, FileEntry]]) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False)
 
 
-def _render_pdf(entries: list[tuple[str, FileEntry]], source_dir: Path, output_path: Path) -> None:
-    """PDF with a genuinely selectable text layer — native image then text below (spec §7.3)."""
+def _render_pdf(
+    entries: list[tuple[str, FileEntry]],
+    source_dir: Path,
+    output_path: Path,
+    *,
+    image_cache: dict[str, "ImageReader"] | None = None,
+) -> None:
+    """PDF with a genuinely selectable text layer — native image then text below (spec §7.3).
+
+    If *image_cache* is provided (a dict keyed by filename), loaded images are
+    stored there on first access and reused on subsequent calls — avoids
+    re-reading the same file when both combined and per-file PDFs are generated.
+    """
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
     from reportlab.lib.utils import ImageReader
@@ -113,7 +124,12 @@ def _render_pdf(entries: list[tuple[str, FileEntry]], source_dir: Path, output_p
         y = page_height - margin
         image_path = source_dir / name
         if image_path.exists():
-            image = ImageReader(str(image_path))
+            if image_cache is not None:
+                if name not in image_cache:
+                    image_cache[name] = ImageReader(str(image_path))
+                image = image_cache[name]
+            else:
+                image = ImageReader(str(image_path))
             image_width, image_height = image.getSize()
             max_w = page_width - 2 * margin
             max_h = page_height * 0.55
@@ -170,6 +186,9 @@ def export_registry(
     entries = _successful_entries(registry)
     root = output_dir / project_name
     written_files: list[Path] = []
+    # Shared image cache for PDF generation: avoids re-reading the same source
+    # image when both combined and per-file PDFs are requested.
+    image_cache: dict[str, object] = {}
 
     if options.single_file:
         combined_dir = root / "combined"
@@ -180,7 +199,7 @@ def export_registry(
             written_files.append(path)
         if "pdf" in options.formats:
             path = combined_dir / f"{project_name}.pdf"
-            _render_pdf(entries, source_dir, path)
+            _render_pdf(entries, source_dir, path, image_cache=image_cache)
             written_files.append(path)
 
     if options.per_file:
@@ -194,7 +213,7 @@ def export_registry(
                 written_files.append(path)
             if "pdf" in options.formats:
                 path = per_file_dir / f"{base}.pdf"
-                _render_pdf([(name, entry)], source_dir, path)
+                _render_pdf([(name, entry)], source_dir, path, image_cache=image_cache)
                 written_files.append(path)
 
     return written_files

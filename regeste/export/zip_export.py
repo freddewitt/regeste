@@ -19,7 +19,13 @@ _README = """# Export Regeste
 """
 
 
-def export_zip(pieces: list[Piece], output_path: Path, *, validated_only: bool = False) -> Path:
+def export_zip(
+    pieces: list[Piece],
+    output_path: Path,
+    *,
+    validated_only: bool = False,
+    target_language: str | None = None,
+) -> Path:
     pieces = filter_pieces(pieces, validated_only=validated_only)
     metadata = []
     with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:

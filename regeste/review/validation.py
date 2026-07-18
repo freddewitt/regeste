@@ -6,13 +6,8 @@ Only this module and `translation/` (the `translations` field) write to a
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
-from regeste.pivot import Event, FieldValidation, Piece, StatusChange, is_translation_stale
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+from regeste.pivot import CONTENT_FIELDS, Event, FieldValidation, Piece, StatusChange, is_translation_stale
+from regeste.pivot.utils import _now
 
 
 def apply_field_validation(
@@ -57,6 +52,25 @@ def apply_correction(piece: Piece, field: str, new_value: str) -> None:
         for translation in piece.translations.values():
             if is_translation_stale(new_value, translation.source_hash):
                 translation.status = "stale"
+
+
+def apply_group_status(
+    piece: Piece,
+    status: str,
+    *,
+    changed_by: str | None = None,
+    rejection_note: str | None = None,
+) -> None:
+    """Apply `status` to every content field of `piece` in one action (Review tab quick-triage
+    buttons). Overwrites each field regardless of its current status, same override semantics
+    as `queue.bulk_validate` — quick triage is a deliberate one-click decision on the whole
+    piece, not a per-field merge. Goes through `apply_field_validation` field by field so
+    history/rejection-note invariants stay identical to per-field review.
+    """
+    for content_field in CONTENT_FIELDS:
+        apply_field_validation(
+            piece, content_field, status, changed_by=changed_by, rejection_note=rejection_note
+        )
 
 
 def ocr_events(piece: Piece) -> list[Event]:

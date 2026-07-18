@@ -1,7 +1,7 @@
 """Main workflow screen (spec §7.1) — a single run: source/output, mode, live progress/costs.
 
-Everything provider/model/preprocessing/costs-table/workers related lives in
-`SettingsDialog` instead (spec §8) — this screen only drives one run.
+Everything provider/model/preprocessing/costs-table/workers related lives in the
+Settings tab (`panels.SettingsPanel`) instead — this screen only drives one run.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from typing import Literal
 
-from PySide6.QtCore import QThread, Qt, Signal
+from PySide6.QtCore import QThread, Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
@@ -36,25 +36,23 @@ from PySide6.QtWidgets import (
 
 from regeste.core.costs import CostTracker, DEFAULT_RATES, Rate, estimate_before_run
 from regeste.core.export import ExportOptions, KNOWN_FORMATS, export_registry
-from regeste.core.imaging import PreprocessOptions, ResizeOptions
+from regeste.core.imaging import IMAGE_EXTENSIONS, PreprocessOptions, ResizeOptions
 from regeste.core.project import ProjectConfig, ProviderConfig
 from regeste.core.registry import FileEntry, Registry
 from regeste.core.transcriber import DEFAULT_SYSTEM_PROMPT, ProgressState, Transcriber, create_provider
 from regeste.i18n import LANGUAGE_NAMES, _, format_cost, is_rtl, set_language
-from regeste.pivot import build_pieces_from_registry, load_piece as load_pivot_piece, save_piece as save_pivot_piece
+from regeste.pivot import build_pieces_from_registry, load_corpus, load_piece as load_pivot_piece, save_piece as save_pivot_piece
 
-from .panels import ExportPanel, LogPanel, QtLogHandler, ReviewPanel, TranslationPanel
+from .panels import ExportPanel, LogPanel, QtLogHandler, ReviewPanel, SettingsPanel, TranslationPanel
 from .panels.log_panel import LOGGER_NAME
-
-logger = logging.getLogger(__name__)
-from .settings_dialog import SettingsDialog
 from .worker import ModelFetchWorker, TranscriptionWorker, start_worker
 
-# Same list/sync logic as regeste/cli/app.py — kept in sync deliberately (spec: opening
-# an existing project must resync new files identically regardless of the front-end).
-IMAGE_EXTENSIONS = {
-    ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp", ".heic", ".heif", ".gif",
-}
+logger = logging.getLogger(__name__)
+
+# Busy indicator next to the progress bar while a run is active - independent of
+# per-file progress, so the UI never looks idle during the (sometimes long) wait
+# for the first provider response.
+_SPINNER_FRAMES = "◐◓◑◒"
 
 
 def _list_images(source_dir: Path) -> list[str]:
@@ -101,7 +99,7 @@ class MainWindow(QMainWindow):
         self._registry: Registry | None = None
         self._config: ProjectConfig | None = None
 
-        # Settings-owned state (spec §8), defaulted here and edited via SettingsDialog.
+        # Settings-owned state (spec §8), defaulted here and edited via the Settings tab.
         self._provider_config = ProviderConfig(kind="claude", model="")
         # Separate translation provider kept even while "same as OCR" is on.
         self._translation_provider_config: ProviderConfig | None = None
@@ -121,6 +119,9 @@ class MainWindow(QMainWindow):
         self._worker: TranscriptionWorker | None = None
         self._validate_thread: QThread | None = None
         self._validate_worker: ModelFetchWorker | None = None
+        self._in_flight_files: set[str] = set()
+        self._spinner_frame = 0
+        self._corpus_cache: list | None = None
 
         self._build_ui()
         self._setup_logging()
@@ -134,6 +135,16 @@ class MainWindow(QMainWindow):
         self._log_handler.emitter.message.connect(self.log_panel.append_message)
         app_logger.addHandler(self._log_handler)
         app_logger.setLevel(logging.INFO)
+        self.log_panel.verbose_toggled.connect(self._on_verbose_toggled)
+
+    def _on_verbose_toggled(self, verbose: bool) -> None:
+        # Verbose reveals the exhaustive DEBUG-level diagnostic logs added throughout
+        # core/ (providers, transcriber, imaging, registry) for troubleshooting — the
+        # logger/handler level is the actual gate, not a display-side filter, so DEBUG
+        # records aren't even formatted/collected while unchecked.
+        level = logging.DEBUG if verbose else logging.INFO
+        logging.getLogger(LOGGER_NAME).setLevel(level)
+        self._log_handler.setLevel(level)
 
     # --- UI construction -----------------------------------------------------------
 
@@ -158,16 +169,24 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.addTab(self._scrollable(self._build_transcription_tab()), _("Transcription"))
 
-        self.export_panel = ExportPanel()
-        self.tabs.addTab(self._scrollable(self.export_panel), _("Export"))
         self.review_panel = ReviewPanel()
         self.tabs.addTab(self._scrollable(self.review_panel), _("Review"))
         self.translation_panel = TranslationPanel()
         self.translation_panel.translation_prompt_changed.connect(self._on_translation_prompt_changed)
         self.tabs.addTab(self._scrollable(self.translation_panel), _("Translation"))
         self._push_translation_context()
+        self.export_panel = ExportPanel()
+        self.tabs.addTab(self._scrollable(self.export_panel), _("Export"))
+        self.settings_panel = SettingsPanel()
+        self.settings_panel.settings_saved.connect(self._on_settings_saved)
+        self._settings_tab_widget = self._scrollable(self.settings_panel)
+        self.tabs.addTab(self._settings_tab_widget, _("Settings"))
+        self._push_settings_context()
         self.log_panel = LogPanel()
-        self.tabs.addTab(self._scrollable(self.log_panel), _("Logs"))
+        self.tabs.addTab(self._scrollable(self.log_panel), _("Log"))
+
+        self._previous_tab_index = 0
+        self.tabs.currentChanged.connect(self._on_tab_changed)
 
         self.project_changed.connect(self.export_panel.on_project_changed)
         self.project_changed.connect(self.review_panel.on_project_changed)
@@ -259,20 +278,24 @@ class MainWindow(QMainWindow):
         self.stop_button = QPushButton(_("Stop"))
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self._on_stop_clicked)
-        self.settings_button = QPushButton(_("Settings..."))
-        self.settings_button.clicked.connect(self._open_settings)
         controls_row.addWidget(self.launch_button)
         controls_row.addWidget(self.stop_button)
         controls_row.addStretch()
-        controls_row.addWidget(self.settings_button)
         layout.addLayout(controls_row)
 
         progress_row = QHBoxLayout()
+        self.spinner_label = QLabel("")
+        self.spinner_label.setFixedWidth(20)
         self.progress_bar = QProgressBar()
         self.progress_label = QLabel("0 / 0")
+        progress_row.addWidget(self.spinner_label)
         progress_row.addWidget(self.progress_bar)
         progress_row.addWidget(self.progress_label)
         layout.addLayout(progress_row)
+
+        self._spinner_timer = QTimer(self)
+        self._spinner_timer.setInterval(150)
+        self._spinner_timer.timeout.connect(self._advance_spinner)
 
         costs_group = QGroupBox(_("Costs"))
         costs_layout = QGridLayout(costs_group)
@@ -322,10 +345,16 @@ class MainWindow(QMainWindow):
         Export/Review/Translation tabs to reload - never touches a piece that
         already has a pivot file, so review/translation progress is preserved.
         """
+        self._corpus_cache = None  # invalidate: corpus may have changed
         if self._registry is not None:
             for piece in build_pieces_from_registry(self._registry, source_dir):
                 if load_pivot_piece(source_dir, piece.id) is None:
                     save_pivot_piece(source_dir, piece)
+        # Push the fresh corpus to panels so they don't each reload from disk.
+        corpus = self.get_corpus(force_reload=True)
+        self.export_panel.set_corpus(corpus)
+        self.review_panel.set_corpus(corpus)
+        self.translation_panel.set_corpus(corpus)
         self._push_translation_context()
         self.project_changed.emit(source_dir)
 
@@ -350,12 +379,12 @@ class MainWindow(QMainWindow):
         self._translation_same_as_ocr = config.translation_same_as_ocr
         self._translation_prompt = config.translation_prompt
         self._push_translation_context()
+        self._push_settings_context()
 
-    # --- Settings dialog -------------------------------------------------------------
+    # --- Settings tab ------------------------------------------------------------------
 
-    def _open_settings(self) -> None:
-        dialog = SettingsDialog(
-            self,
+    def _push_settings_context(self) -> None:
+        self.settings_panel.apply_config(
             provider_config=self._provider_config,
             preprocessing=self._preprocessing,
             resize=self._resize_options,
@@ -368,20 +397,42 @@ class MainWindow(QMainWindow):
             translation_provider=self._translation_provider_config,
             translation_same_as_ocr=self._translation_same_as_ocr,
         )
-        if dialog.exec() == SettingsDialog.DialogCode.Accepted:
-            self._provider_config = dialog.get_provider_config()
-            self._preprocessing = dialog.get_preprocessing()
-            self._resize_options = dialog.get_resize()
-            self._forced_language = dialog.get_forced_language()
-            self._system_prompt = dialog.get_system_prompt()
-            self._rates = dialog.get_rates()
-            self._spend_ceiling = dialog.get_spend_ceiling()
-            self._workers = dialog.get_workers()
-            self._translation_provider_config = dialog.get_translation_provider()
-            self._translation_same_as_ocr = dialog.get_translation_same_as_ocr()
+
+    def _sync_settings_from_panel(self) -> None:
+        """Pull the Settings tab's current widget values into the live config.
+
+        Called defensively (tab switch away from Settings, launch, translate)
+        so a change is never silently lost just because "Save settings" wasn't
+        clicked — unlike the old modal dialog, nothing forces that click in a
+        permanent tab.
+        """
+        panel = self.settings_panel
+        self._provider_config = panel.get_provider_config()
+        self._preprocessing = panel.get_preprocessing()
+        self._resize_options = panel.get_resize()
+        self._forced_language = panel.get_forced_language()
+        self._system_prompt = panel.get_system_prompt()
+        self._rates = panel.get_rates()
+        self._spend_ceiling = panel.get_spend_ceiling()
+        self._workers = panel.get_workers()
+        self._translation_provider_config = panel.get_translation_provider()
+        self._translation_same_as_ocr = panel.get_translation_same_as_ocr()
+
+    def _on_settings_saved(self) -> None:
+        self._sync_settings_from_panel()
+        self._push_translation_context()
+        self._persist_meta()
+        self._apply_ui_language(self.settings_panel.get_ui_language())
+
+    def _on_tab_changed(self, index: int) -> None:
+        # Leaving Settings for any other tab must apply pending changes - Launch
+        # and Translate both read cached `self._provider_config`/etc, not the
+        # panel's widgets directly.
+        if self.tabs.widget(self._previous_tab_index) is self._settings_tab_widget and index != self._previous_tab_index:
+            self._sync_settings_from_panel()
             self._push_translation_context()
             self._persist_meta()
-            self._apply_ui_language(dialog.get_ui_language())
+        self._previous_tab_index = index
 
     def _on_language_selector_changed(self, index: int) -> None:
         self._apply_ui_language(self.language_combo.itemData(index))
@@ -394,6 +445,20 @@ class MainWindow(QMainWindow):
             or self.export_panel._thread is not None
             or self.translation_panel._thread is not None
         )
+
+    def get_corpus(self, *, force_reload: bool = False) -> list:
+        """Return the pivot corpus for the current project, cached after first load.
+
+        Panels should call this instead of ``load_corpus()`` individually.
+        Pass ``force_reload=True`` after a run finishes or a project changes.
+        """
+        source_text = self.source_dir_edit.text().strip()
+        if not source_text:
+            return []
+        if self._corpus_cache is not None and not force_reload:
+            return self._corpus_cache
+        self._corpus_cache = load_corpus(Path(source_text))
+        return self._corpus_cache
 
     def _apply_ui_language(self, new_language: str | None) -> None:
         """Switches the gettext catalog, layout direction and rebuilds the UI so
@@ -511,6 +576,9 @@ class MainWindow(QMainWindow):
         self._persist_meta()
 
     def _on_launch_clicked(self) -> None:
+        # Belt-and-braces alongside the tab-switch sync: Launch must never run
+        # against a stale provider config just because Settings wasn't left first.
+        self._sync_settings_from_panel()
         source_text = self.source_dir_edit.text().strip()
         if not source_text:
             QMessageBox.critical(self, _("Error"), _("Choose a source folder first."))
@@ -594,12 +662,21 @@ class MainWindow(QMainWindow):
         self._transcriber = Transcriber(config, provider, system_prompt=config.system_prompt)
         cost_tracker = CostTracker(rates=config.rates)
 
+        logger.info(
+            _("Starting: {count} file(s), provider={provider}, model={model}").format(
+                count=len(file_list), provider=config.provider.kind, model=config.provider.model
+            )
+        )
+        self._in_flight_files.clear()
+
         self._worker = TranscriptionWorker(self._transcriber, registry, mode, cost_tracker)
         self._thread = start_worker(self._worker)
+        self._worker.file_started.connect(self._on_file_started)
         self._worker.progress.connect(self._on_progress)
         self._worker.finished.connect(self._on_run_finished)
         self._worker.failed.connect(self._on_run_failed)
         self._thread.start()
+        self._spinner_timer.start()
 
         self.launch_button.setEnabled(False)
         self.stop_button.setEnabled(True)
@@ -631,17 +708,27 @@ class MainWindow(QMainWindow):
     def _on_progress(self, state: ProgressState) -> None:
         entry = self._registry.files.get(state.file_name) if self._registry else None
         status = entry.status if entry else "error"
-        message = f"{state.file_name} - {status}"
-        if entry and entry.error_message:
-            message += f" - {entry.error_message}"
-        if status == "ok":
+        if status == "ok" and entry:
+            message = _(
+                "{file} - done (model={model}, tokens_in={tin}, tokens_out={tout}, cost={cost})"
+            ).format(
+                file=state.file_name,
+                model=entry.model,
+                tin=entry.tokens_in,
+                tout=entry.tokens_out,
+                cost=format_cost(entry.cost),
+            )
             logger.info(message)
         else:
+            message = f"{state.file_name} - {status}"
+            if entry and entry.error_message:
+                message += f" - {entry.error_message}"
             logger.error(message)
 
+        self._in_flight_files.discard(state.file_name)
         self.progress_bar.setMaximum(max(state.total, 1))
         self.progress_bar.setValue(state.processed)
-        self.progress_label.setText(f"{state.processed} / {state.total}")
+        self._update_progress_label()
 
         self.file_cost_label.setText(format_cost(entry.cost) if entry else "-")
         self.total_cost_label.setText(format_cost(state.total_cost))
@@ -669,8 +756,33 @@ class MainWindow(QMainWindow):
         self._thread = None
         self._worker = None
         self._transcriber = None
+        self._in_flight_files.clear()
+        self._spinner_timer.stop()
+        self.spinner_label.setText("")
         self.launch_button.setEnabled(True)
         self.stop_button.setEnabled(False)
+
+    def _advance_spinner(self) -> None:
+        self._spinner_frame = (self._spinner_frame + 1) % len(_SPINNER_FRAMES)
+        self.spinner_label.setText(_SPINNER_FRAMES[self._spinner_frame])
+
+    def _update_progress_label(self) -> None:
+        total = self.progress_bar.maximum()
+        processed = self.progress_bar.value()
+        if self._in_flight_files:
+            current = ", ".join(sorted(self._in_flight_files))
+            self.progress_label.setText(
+                _("{done} / {total} - processing: {current}").format(
+                    done=processed, total=total, current=current
+                )
+            )
+        else:
+            self.progress_label.setText(f"{processed} / {total}")
+
+    def _on_file_started(self, name: str) -> None:
+        self._in_flight_files.add(name)
+        logger.info(_("{file} - starting").format(file=name))
+        self._update_progress_label()
 
     def _export_and_log(self) -> None:
         if self._config is None or self._registry is None:

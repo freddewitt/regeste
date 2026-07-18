@@ -6,6 +6,7 @@ Everything happens in memory (the source file is never written to, spec §3.1).
 from __future__ import annotations
 
 import io
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -17,12 +18,19 @@ try:
 except ImportError:  # pragma: no cover - optional dependency documented in pyproject
     cv2 = None
 
+logger = logging.getLogger(__name__)
+
 try:
     import pillow_heif
 
     pillow_heif.register_heif_opener()
 except ImportError:  # pragma: no cover - optional dependency documented in pyproject
     pass
+
+# Supported image file extensions for source folder scanning.
+IMAGE_EXTENSIONS: set[str] = {
+    ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp", ".heic", ".heif", ".gif",
+}
 
 # Default per-provider limits (spec §3.1) — user-adjustable.
 DEFAULT_LIMITS: dict[str, "ProviderLimit"] = {}
@@ -153,6 +161,22 @@ def _contrast(image: Image.Image) -> Image.Image:
     return Image.fromarray(binarized).convert("RGB")
 
 
+# Module-level cache for RealESRGANer instances, keyed by (model_name, device).
+# Avoids reloading the model on every call — the model weights are large and the
+# load is the dominant cost of the upscale step.
+_esrgan_cache: dict[tuple[str, str], object] = {}
+
+
+def _detect_esrgan_device() -> str:
+    """Best-effort GPU detection for Real-ESRGAN; defaults to CPU."""
+    try:
+        import torch  # type: ignore[import-not-found]
+
+        return "cuda" if torch.cuda.is_available() else "cpu"
+    except ImportError:
+        return "cpu"
+
+
 def _upscale(image: Image.Image, *, quality: bool) -> Image.Image:
     """2x sharpening. `quality=True` tries Real-ESRGAN (optional extra), else Pillow LANCZOS.
 
@@ -167,28 +191,43 @@ def _upscale(image: Image.Image, *, quality: bool) -> Image.Image:
         try:
             from realesrgan import RealESRGANer  # type: ignore[import-not-found]
 
-            # Minimal instantiation per the package's documented API; fine-grained
-            # config (model, device) will be exposed in Advanced Settings (GUI phase).
-            upsampler = RealESRGANer(scale=2)
+            model_name = "RealESRGAN_x2plus"
+            device = _detect_esrgan_device()
+            cache_key = (model_name, device)
+            if cache_key not in _esrgan_cache:
+                _esrgan_cache[cache_key] = RealESRGANer(scale=2, model_name=model_name, device=device)
+            upsampler = _esrgan_cache[cache_key]
             array = _pil_to_cv2(image)
             output, _ = upsampler.enhance(array, outscale=2)
             return _cv2_to_pil(output)
-        except ImportError:
-            pass  # fall back to Pillow below
+        except (ImportError, AttributeError):
+            pass  # fall back to Pillow below (ImportError: missing lib, AttributeError: no cuda)
     width, height = image.size
     return image.resize((width * 2, height * 2), Image.LANCZOS)
 
 
 def preprocess(image: Image.Image, options: PreprocessOptions) -> Image.Image:
     """Apply the enabled preprocessing chain, in order deskew → denoise → contrast → upscale."""
+    applied = []
+    skipped_no_cv2 = []
     if options.deskew:
+        (applied if cv2 is not None else skipped_no_cv2).append("deskew")
         image = _deskew(image)
     if options.denoise:
+        (applied if cv2 is not None else skipped_no_cv2).append("denoise")
         image = _denoise(image)
     if options.contrast:
+        (applied if cv2 is not None else skipped_no_cv2).append("contrast")
         image = _contrast(image)
     if options.upscale:
+        applied.append("upscale" + (" (quality)" if options.upscale_quality else ""))
         image = _upscale(image, quality=options.upscale_quality)
+    if skipped_no_cv2:
+        logger.warning(
+            "Preprocessing step(s) skipped, OpenCV not installed: %s", ", ".join(skipped_no_cv2)
+        )
+    if applied:
+        logger.debug("Preprocessing applied: %s", ", ".join(applied))
     return image
 
 
@@ -199,12 +238,13 @@ def resize_for_provider(
     resize_options: ResizeOptions = ResizeOptions(),
     limits: dict[str, ProviderLimit] = DEFAULT_LIMITS,
 ) -> bytes:
-    """Bound dimensions (LANCZOS) then re-encode to JPEG at stepped quality levels.
+    """Bound dimensions (LANCZOS) then re-encode to JPEG via binary search on quality.
 
     Never modifies the source image: everything happens in memory, the result
     is returned as JPEG bytes ready to send to the provider.
     """
     if resize_options.disabled:
+        logger.debug("Resize disabled by override, re-encoding at quality=95")
         return _encode_jpeg(image, quality=95)
 
     limit = resolve_provider_limit(provider, limits)
@@ -214,13 +254,36 @@ def resize_for_provider(
     width, height = image.size
     if max(width, height) > max_px:
         scale = max_px / max(width, height)
-        image = image.resize((int(width * scale), int(height * scale)), Image.LANCZOS)
+        new_size = (int(width * scale), int(height * scale))
+        logger.debug(
+            "Resize %dx%d -> %dx%d (max_px=%d) for provider=%s", width, height, *new_size, max_px, provider
+        )
+        image = image.resize(new_size, Image.LANCZOS)
 
-    for quality in (95, 85, 75, 65, 50, 35):
-        encoded = _encode_jpeg(image, quality=quality)
+    # Fast path: if the highest quality already fits, return immediately (0 encodings wasted).
+    hi_encoded = _encode_jpeg(image, quality=95)
+    if len(hi_encoded) <= max_bytes:
+        logger.debug("Encoded at quality=95, %d bytes (limit=%d)", len(hi_encoded), max_bytes)
+        return hi_encoded
+
+    # Binary search on quality ∈ [10, 95] to find the highest quality that fits.
+    # Start with the lowest quality as fallback (smallest possible output).
+    best = _encode_jpeg(image, quality=10)
+    low, high = 10, 95
+    for _ in range(8):  # log2(85) ≈ 7, cap at 8 to guarantee termination
+        if low > high:
+            break
+        mid = (low + high) // 2
+        encoded = _encode_jpeg(image, quality=mid)
         if len(encoded) <= max_bytes:
-            return encoded
-    return encoded  # last quality step, returned even if still over the limit
+            best = encoded
+            low = mid + 1  # try higher quality
+        else:
+            high = mid - 1  # need lower quality
+    logger.debug(
+        "Binary search result: %d bytes (limit=%d)", len(best), max_bytes
+    )
+    return best
 
 
 def _encode_jpeg(image: Image.Image, *, quality: int) -> bytes:

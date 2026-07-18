@@ -1,8 +1,17 @@
-"""Translation tab — provider/model/target-language selection, glossary editor,
-source/translation side-by-side view.
+"""Translation tab — corpus-level batch translation launcher.
 
-Guards (`translation.check_guards`) block translation on a non-validated piece
-and warn on low/unknown OCR confidence, per export_instruct.md.
+Positioned right after Review, before Export (spec update: Translation is now a
+batch job over the whole corpus, not a single-piece workbench). Scope is either
+"validated pieces only" (aligned with the existing `global_status(piece) ==
+"validated"` definition already used by `check_guards`/the old single-piece
+picker — not redefined here) or "all pieces", which bypasses the validation
+guard the same way the headless CLI already does (`enforce_guard=False`) while
+keeping the low-confidence warning informational only.
+
+Guards (`translation.check_guards`) still gate the "validated only" scope;
+`translate_piece()` writes into `Piece.translations[target_language]` and
+`save_piece()` persists it — the only other writer of the pivot besides
+`review/`.
 """
 
 from __future__ import annotations
@@ -13,15 +22,15 @@ from pathlib import Path
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtWidgets import (
     QComboBox,
-    QDialog,
     QGroupBox,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
+    QListWidget,
     QMessageBox,
     QPlainTextEdit,
+    QProgressBar,
     QPushButton,
-    QSplitter,
+    QRadioButton,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -30,31 +39,24 @@ from PySide6.QtWidgets import (
 
 from regeste.core.project import ProviderConfig
 from regeste.i18n import LANGUAGE_NAMES, _
-from regeste.pivot import Piece, global_status, load_corpus, save_piece
+from regeste.pivot import Piece, global_status, load_corpus
 from regeste.translation import (
     ClaudeTranslationProvider,
     DEFAULT_TRANSLATION_PROMPT,
     GeminiTranslationProvider,
     OpenAICompatTranslationProvider,
     TranslationProvider,
-    check_guards,
     load_glossary,
     save_glossary,
 )
 
-from ..prompt_dialog import PromptEditDialog
-from ..worker import TranslationWorker, start_worker
+from ..worker import TranslationBatchWorker, start_worker
 
 logger = logging.getLogger(__name__)
 
-PROVIDER_KINDS = ("claude", "gemini", "openai", "lm_studio", "llama_cpp", "ollama")
-REQUIRES_API_KEY_KINDS = ("claude", "gemini", "openai")
-DEFAULT_BASE_URLS = {
-    "openai": "https://api.openai.com/v1",
-    "lm_studio": "http://localhost:1234/v1",
-    "llama_cpp": "http://localhost:8080/v1",
-    "ollama": "http://localhost:11434/v1",
-}
+# Prompt placeholders the guard warning below refers to, if the user strips them
+# from the (now inline, not dialog-gated) prompt text area.
+_GUARDED_PLACEHOLDERS = ("{entites_a_preserver}", "{glossaire}")
 
 
 def _create_translation_provider(kind: str, base_url: str | None, api_key: str | None) -> TranslationProvider:
@@ -66,8 +68,8 @@ def _create_translation_provider(kind: str, base_url: str | None, api_key: str |
 
 
 class TranslationPanel(QWidget):
-    # Emitted when the user saves an edited translation prompt, so the main
-    # window can persist it into the project registry.
+    # Emitted whenever the user edits the (now inline) translation prompt, so the
+    # main window can persist it into the project registry.
     translation_prompt_changed = Signal(object)
 
     def __init__(self, parent: QWidget | None = None) -> None:
@@ -76,43 +78,43 @@ class TranslationPanel(QWidget):
         self._pieces: list[Piece] = []
         self._glossary: dict[str, str] = {}
         self._thread: QThread | None = None
-        self._worker: TranslationWorker | None = None
+        self._worker: TranslationBatchWorker | None = None
         # Effective translation provider (OCR or separate), resolved and pushed
         # by the main window; the provider choice UI lives in Settings.
         self._translation_provider: ProviderConfig | None = None
-        # None means "use the default translation prompt".
-        self._translation_prompt: str | None = None
+        self._corpus: list[Piece] | None = None
         self._build_ui()
         self.on_project_changed(None)
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
 
-        selection_group = QGroupBox(_("Piece and target language"))
+        selection_group = QGroupBox(_("Corpus translation"))
         selection_layout = QHBoxLayout(selection_group)
-        selection_layout.addWidget(QLabel(_("Validated piece")))
-        self.piece_combo = QComboBox()
-        selection_layout.addWidget(self.piece_combo)
-        selection_layout.addWidget(QLabel(_("Source language")))
-        self.source_language_edit = QLineEdit()
-        self.source_language_edit.setPlaceholderText(_("auto-detected"))
-        selection_layout.addWidget(self.source_language_edit)
         selection_layout.addWidget(QLabel(_("Target language")))
         self.language_combo = QComboBox()
         for code, native_name in LANGUAGE_NAMES.items():
             self.language_combo.addItem(native_name, code)
         selection_layout.addWidget(self.language_combo)
-        self.edit_prompt_button = QPushButton(_("Edit translation prompt..."))
-        self.edit_prompt_button.clicked.connect(self._on_edit_prompt_clicked)
-        selection_layout.addWidget(self.edit_prompt_button)
-        self.translate_button = QPushButton(_("Translate"))
+
+        self.validated_only_radio = QRadioButton(_("Validated pieces only"))
+        self.validated_only_radio.setChecked(True)
+        self.all_pieces_radio = QRadioButton(_("All pieces"))
+        selection_layout.addWidget(self.validated_only_radio)
+        selection_layout.addWidget(self.all_pieces_radio)
+
+        self.translate_button = QPushButton(_("Launch translation"))
         self.translate_button.clicked.connect(self._on_translate_clicked)
         selection_layout.addWidget(self.translate_button)
         layout.addWidget(selection_group)
 
-        self.guard_label = QLabel("")
-        self.guard_label.setWordWrap(True)
-        layout.addWidget(self.guard_label)
+        prompt_group = QGroupBox(_("Translation prompt"))
+        prompt_layout = QVBoxLayout(prompt_group)
+        self.prompt_edit = QPlainTextEdit()
+        self.prompt_edit.setPlainText(DEFAULT_TRANSLATION_PROMPT)
+        self.prompt_edit.setMinimumHeight(160)
+        prompt_layout.addWidget(self.prompt_edit)
+        layout.addWidget(prompt_group)
 
         glossary_group = QGroupBox(_("Corpus glossary"))
         glossary_layout = QVBoxLayout(glossary_group)
@@ -132,89 +134,46 @@ class TranslationPanel(QWidget):
         glossary_layout.addLayout(glossary_buttons)
         layout.addWidget(glossary_group)
 
-        splitter = QSplitter()
-        self.source_view = QPlainTextEdit()
-        self.source_view.setReadOnly(True)
-        self.translation_view = QPlainTextEdit()
-        self.translation_view.setReadOnly(True)
-        splitter.addWidget(self.source_view)
-        splitter.addWidget(self.translation_view)
-        layout.addWidget(splitter)
+        progress_row = QHBoxLayout()
+        self.progress_bar = QProgressBar()
+        self.progress_label = QLabel("0 / 0")
+        progress_row.addWidget(self.progress_bar)
+        progress_row.addWidget(self.progress_label)
+        layout.addLayout(progress_row)
 
-        self.piece_combo.currentIndexChanged.connect(self._on_piece_selected)
+        layout.addWidget(QLabel(_("Log")))
+        self.log_list = QListWidget()
+        layout.addWidget(self.log_list)
 
-    # --- Translation provider and prompt (configured in Settings / dialog) --------
+    # --- Translation provider (configured in Settings) -----------------------------
 
     def set_effective_translation_provider(self, config: ProviderConfig | None) -> None:
         """Store the resolved translation provider (same as OCR or separate),
-        pushed by the main window; used when the user clicks Translate."""
+        pushed by the main window; used when the user launches a batch."""
         self._translation_provider = config
 
     def set_translation_prompt(self, prompt: str | None) -> None:
         """Restore the saved translation prompt (None = use the default)."""
-        self._translation_prompt = prompt
+        self.prompt_edit.setPlainText(prompt if prompt is not None else DEFAULT_TRANSLATION_PROMPT)
 
-    def _on_edit_prompt_clicked(self) -> None:
-        current = (
-            self._translation_prompt
-            if self._translation_prompt is not None
-            else DEFAULT_TRANSLATION_PROMPT
-        )
-        dialog = PromptEditDialog(
-            self,
-            title=_("Translation prompt"),
-            current_text=current,
-            default_text=DEFAULT_TRANSLATION_PROMPT,
-            warn_placeholders=["{entites_a_preserver}", "{glossaire}"],
-            warning_message=_(
-                "Removing {entites_a_preserver} or {glossaire} disables the injection "
-                "of named entities and the glossary into the prompt."
-            ),
-        )
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            text = dialog.text()
-            self._translation_prompt = None if text == DEFAULT_TRANSLATION_PROMPT else text
-            self.translation_prompt_changed.emit(self._translation_prompt)
+    def _current_prompt(self) -> str | None:
+        text = self.prompt_edit.toPlainText()
+        return None if text == DEFAULT_TRANSLATION_PROMPT else text
 
     # --- Project synchronisation --------------------------------------------------
+
+    def set_corpus(self, corpus: list[Piece] | None) -> None:
+        """Receive a pre-loaded corpus from the main window cache."""
+        self._corpus = corpus
 
     def on_project_changed(self, source_dir: Path | None) -> None:
         self._source_dir = source_dir
         self._glossary = load_glossary(source_dir) if source_dir is not None else {}
         self._populate_glossary_table()
+        self._pieces = self._corpus if self._corpus is not None else (load_corpus(source_dir) if source_dir is not None else [])
+        self.translate_button.setEnabled(source_dir is not None and bool(self._pieces))
 
-        pieces = load_corpus(source_dir) if source_dir is not None else []
-        self._pieces = [p for p in pieces if global_status(p) == "validated"]
-        self.piece_combo.clear()
-        for piece in self._pieces:
-            self.piece_combo.addItem(piece.call_number or piece.id, piece.id)
-
-        enabled = source_dir is not None
-        self.translate_button.setEnabled(enabled and bool(self._pieces))
-        self._on_piece_selected(self.piece_combo.currentIndex())
-
-    def _current_piece(self) -> Piece | None:
-        piece_id = self.piece_combo.currentData()
-        return next((p for p in self._pieces if p.id == piece_id), None)
-
-    def _on_piece_selected(self, _index: int) -> None:
-        piece = self._current_piece()
-        if piece is None:
-            self.source_view.setPlainText("")
-            self.translation_view.setPlainText("")
-            self.source_language_edit.setText("")
-            self.guard_label.setText("")
-            return
-        self.source_view.setPlainText(piece.transcription)
-        # Pre-fill the source language from the OCR-detected language; editable.
-        self.source_language_edit.setText(piece.language_detected)
-        target = self.language_combo.currentData()
-        translation = (piece.translations or {}).get(target)
-        self.translation_view.setPlainText(translation.text if translation else "")
-        guard = check_guards(piece)
-        self.guard_label.setText(" ".join(guard.warnings))
-
-    # --- Glossary ---------------------------------------------------------------------
+    # --- Glossary (unchanged, out of scope for this task) --------------------------
 
     def _populate_glossary_table(self) -> None:
         self.glossary_table.setRowCount(0)
@@ -250,72 +209,87 @@ class TranslationPanel(QWidget):
         save_glossary(self._source_dir, self._glossary)
         QMessageBox.information(self, _("Glossary"), _("Glossary saved."))
 
-    # --- Translation ---------------------------------------------------------------------
+    # --- Batch translation ----------------------------------------------------------
+
+    def _scoped_pieces(self) -> list[Piece]:
+        if self.validated_only_radio.isChecked():
+            return [p for p in self._pieces if global_status(p) == "validated"]
+        return list(self._pieces)
 
     def _on_translate_clicked(self) -> None:
-        piece = self._current_piece()
-        if piece is None or self._source_dir is None:
+        if self._source_dir is None:
             return
 
-        guard = check_guards(piece)
-        if not guard.allowed:
-            QMessageBox.critical(self, _("Translation blocked"), guard.blocked_reason or "")
-            logger.error(guard.blocked_reason or "")
-            return
-        if guard.warnings:
+        prompt_text = self.prompt_edit.toPlainText()
+        removed = [p for p in _GUARDED_PLACEHOLDERS if p not in prompt_text]
+        if removed:
             answer = QMessageBox.question(
                 self,
                 _("Warning"),
-                "\n".join(guard.warnings) + "\n\n" + _("Continue anyway?"),
+                _(
+                    "Removing {entites_a_preserver} or {glossaire} disables the injection "
+                    "of named entities and the glossary into the prompt."
+                )
+                + "\n\n"
+                + _("Continue anyway?"),
             )
             if answer != QMessageBox.StandardButton.Yes:
                 return
+        self.translation_prompt_changed.emit(self._current_prompt())
+
+        pieces = self._scoped_pieces()
+        if not pieces:
+            QMessageBox.information(self, _("Translation"), _("No piece matches the selected scope."))
+            return
 
         config = self._translation_provider
         if config is None or not config.model.strip():
-            QMessageBox.critical(
-                self,
-                _("Translation failed"),
-                _("No translation model is configured."),
-            )
+            QMessageBox.critical(self, _("Translation failed"), _("No translation model is configured."))
             return
 
-        provider = _create_translation_provider(
-            config.kind,
-            config.base_url or None,
-            config.api_key or None,
-        )
+        provider = _create_translation_provider(config.kind, config.base_url or None, config.api_key or None)
         target_language = self.language_combo.currentData()
         glossary = self._current_glossary()
+        enforce_guard = self.validated_only_radio.isChecked()
 
         self.translate_button.setEnabled(False)
-        self._worker = TranslationWorker(
-            piece,
+        self.log_list.clear()
+        self.progress_bar.setMaximum(len(pieces))
+        self.progress_bar.setValue(0)
+        self.progress_label.setText(f"0 / {len(pieces)}")
+
+        self._worker = TranslationBatchWorker(
+            self._source_dir,
+            pieces,
             target_language,
             provider,
             config.model.strip(),
             glossary=glossary,
-            source_language=self.source_language_edit.text().strip(),
-            template=self._translation_prompt,
+            template=self._current_prompt(),
+            enforce_guard=enforce_guard,
         )
         self._thread = start_worker(self._worker)
-        self._worker.succeeded.connect(self._on_translation_succeeded)
-        self._worker.failed.connect(self._on_translation_failed)
+        self._worker.progress.connect(self._on_batch_progress)
+        self._worker.finished.connect(self._on_batch_finished)
         self._thread.start()
 
-    def _on_translation_succeeded(self, piece: Piece) -> None:
-        self._finish_run()
-        if self._source_dir is not None:
-            save_piece(self._source_dir, piece)
-        target = self.language_combo.currentData()
-        translation = (piece.translations or {}).get(target)
-        self.translation_view.setPlainText(translation.text if translation else "")
-        logger.info(f"{piece.id} -> {target}: OK")
+    def _on_batch_progress(self, done: int, total: int, piece_id: str) -> None:
+        self.progress_bar.setValue(done)
+        self.progress_label.setText(f"{done} / {total}")
+        self.log_list.addItem(f"{piece_id} - OK")
+        logger.info(f"{piece_id}: translated")
 
-    def _on_translation_failed(self, message: str) -> None:
+    def _on_batch_finished(self, succeeded: list, errors: list) -> None:
         self._finish_run()
-        QMessageBox.critical(self, _("Translation failed"), message)
-        logger.error(_("Translation failed: {error}").format(error=message))
+        for piece_id, message in errors:
+            self.log_list.addItem(f"{piece_id} - {_('Error')}: {message}")
+            logger.error(f"{piece_id}: {message}")
+        self.log_list.addItem(
+            _("Translation complete: {ok} succeeded, {failed} failed.").format(
+                ok=len(succeeded), failed=len(errors)
+            )
+        )
+        logger.info(f"Batch translation done: {len(succeeded)} ok, {len(errors)} failed")
 
     def _finish_run(self) -> None:
         if self._thread is not None:

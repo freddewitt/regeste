@@ -1,3 +1,5 @@
+import logging
+
 from regeste.core.registry import Registry
 
 
@@ -53,3 +55,23 @@ def test_atomic_save_leaves_no_temp_file(tmp_path):
     registry.save()
     temp_files = list(tmp_path.glob(".regeste.json.*.tmp"))
     assert temp_files == []
+
+
+def test_verbose_diagnostic_logging(tmp_path, caplog):
+    """The Logs tab's "Verbose" checkbox surfaces DEBUG logs — check the registry actually
+    emits some at its key points (load/new/save/record_result/record_error).
+    """
+    with caplog.at_level(logging.DEBUG, logger="regeste.core.registry"):
+        registry = Registry.new(tmp_path, meta={}, file_names=["a.jpg", "b.jpg"])
+        registry.record_result(
+            "a.jpg", text="x", description="", tokens_in=1, tokens_out=1, cost=0.0, model="m"
+        )
+        registry.record_error("b.jpg", "boom")
+        registry.save()
+        Registry.load(tmp_path)
+
+    messages = " | ".join(caplog.messages)
+    assert "a.jpg" in messages and "recorded ok" in messages
+    assert "b.jpg" in messages and "boom" in messages
+    assert "saved" in messages
+    assert "loaded" in messages

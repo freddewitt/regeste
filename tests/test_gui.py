@@ -25,7 +25,40 @@ from regeste.core.providers.base import ModelInfo, Provider, TranscriptionResult
 from regeste.core.imaging import PreprocessOptions, ResizeOptions
 from regeste.core.registry import Registry
 from regeste.gui.main_window import MainWindow
-from regeste.gui.settings_dialog import SettingsDialog
+from regeste.gui.panels import SettingsPanel
+
+
+def _settings_panel(
+    *,
+    provider_config,
+    preprocessing,
+    resize,
+    forced_language,
+    system_prompt,
+    rates,
+    spend_ceiling,
+    workers,
+    ui_language=None,
+    translation_provider=None,
+    translation_same_as_ocr=True,
+):
+    """Test helper: `SettingsPanel` builds empty and is populated via `apply_config()`
+    (the persistent-tab replacement for the old `SettingsDialog(...)` constructor)."""
+    panel = SettingsPanel()
+    panel.apply_config(
+        provider_config=provider_config,
+        preprocessing=preprocessing,
+        resize=resize,
+        forced_language=forced_language,
+        system_prompt=system_prompt,
+        rates=rates,
+        spend_ceiling=spend_ceiling,
+        workers=workers,
+        ui_language=ui_language,
+        translation_provider=translation_provider,
+        translation_same_as_ocr=translation_same_as_ocr,
+    )
+    return panel
 
 
 class FakeProvider(Provider):
@@ -116,6 +149,84 @@ def test_full_run_end_to_end_writes_registry_and_export(qtbot, tmp_path, monkeyp
 
     assert window.launch_button.isEnabled() is True
     assert window.stop_button.isEnabled() is False
+
+
+def test_launch_shows_busy_spinner_and_current_file_while_running(qtbot, tmp_path, monkeypatch):
+    """A run must never look idle: the spinner animates and the progress label
+    names the file currently being processed as soon as it's dispatched, not only
+    once the (possibly slow) provider call returns."""
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    _image(source_dir, "a.jpg")
+
+    responses = [
+        TranscriptionResult(text="A", description="", tokens_in=10, tokens_out=5, model="fake-model"),
+    ]
+    provider = FakeProvider(responses=responses)
+    monkeypatch.setattr("regeste.gui.main_window.create_provider", lambda config: provider)
+    monkeypatch.setattr(
+        "regeste.gui.main_window.QMessageBox.question",
+        lambda *args, **kwargs: QMessageBox.StandardButton.Yes,
+    )
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window.set_source_dir(source_dir)
+
+    assert not window._spinner_timer.isActive()
+
+    window._on_launch_clicked()
+    # The spinner starts synchronously in `_on_launch_clicked`, before the worker
+    # thread has had any chance to run - it must never depend on a result coming back.
+    assert window._spinner_timer.isActive()
+
+    qtbot.waitUntil(lambda: window._worker is None, timeout=5000)
+    assert not window._spinner_timer.isActive()
+    assert window.spinner_label.text() == ""
+
+
+def test_progress_label_names_files_currently_in_flight(qtbot):
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window.progress_bar.setMaximum(3)
+    window.progress_bar.setValue(0)
+
+    window._on_file_started("a.jpg")
+    assert "a.jpg" in window.progress_label.text()
+
+    window._on_file_started("b.jpg")
+    assert "a.jpg" in window.progress_label.text()
+    assert "b.jpg" in window.progress_label.text()
+
+
+def test_on_progress_logs_model_tokens_and_cost_on_success(qtbot, tmp_path, caplog):
+    import logging
+
+    from regeste.core.transcriber import ProgressState
+    from regeste.core.registry import FileEntry, Registry
+
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    registry = Registry.new(source_dir, meta={}, file_names=["a.jpg"])
+    registry.files["a.jpg"] = FileEntry(
+        status="ok", model="fake-model", tokens_in=100, tokens_out=20, cost=0.01
+    )
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window._registry = registry
+    window._on_file_started("a.jpg")
+
+    with caplog.at_level(logging.INFO, logger="regeste.gui.main_window"):
+        window._on_progress(
+            ProgressState(file_name="a.jpg", processed=1, total=1, total_cost=0.01, projection=None)
+        )
+
+    messages = " | ".join(caplog.messages)
+    assert "a.jpg" in messages
+    assert "fake-model" in messages
+    assert "100" in messages and "20" in messages
+    assert "a.jpg" not in window._in_flight_files
 
 
 def test_launch_declining_cost_estimate_cancels_the_run(qtbot, tmp_path, monkeypatch):
@@ -303,10 +414,9 @@ def test_stop_button_calls_request_stop(qtbot):
     assert stub.stopped is True
 
 
-def test_settings_dialog_round_trips_values(qtbot):
+def test_settings_panel_round_trips_values(qtbot):
     provider_config = ProviderConfig(kind="ollama", model="llama-vision", base_url="http://localhost:11434/v1")
-    dialog = SettingsDialog(
-        None,
+    panel = _settings_panel(
         provider_config=provider_config,
         preprocessing=PreprocessOptions(deskew=True),
         resize=ResizeOptions(max_px_override=2048),
@@ -316,21 +426,20 @@ def test_settings_dialog_round_trips_values(qtbot):
         spend_ceiling=5.0,
         workers=8,
     )
-    qtbot.addWidget(dialog)
+    qtbot.addWidget(panel)
 
-    assert dialog.get_provider_config().kind == "ollama"
-    assert dialog.get_preprocessing().deskew is True
-    assert dialog.get_resize().max_px_override == 2048
-    assert dialog.get_forced_language() == "fr"
-    assert dialog.get_system_prompt() == "custom prompt"
-    assert dialog.get_workers() == 8
-    assert dialog.get_spend_ceiling() == 5.0
-    assert "m" in dialog.get_rates()
+    assert panel.get_provider_config().kind == "ollama"
+    assert panel.get_preprocessing().deskew is True
+    assert panel.get_resize().max_px_override == 2048
+    assert panel.get_forced_language() == "fr"
+    assert panel.get_system_prompt() == "custom prompt"
+    assert panel.get_workers() == 8
+    assert panel.get_spend_ceiling() == 5.0
+    assert "m" in panel.get_rates()
 
 
-def test_settings_dialog_resize_max_bytes_override_round_trips(qtbot):
-    dialog = SettingsDialog(
-        None,
+def test_settings_panel_resize_max_bytes_override_round_trips(qtbot):
+    panel = _settings_panel(
         provider_config=ProviderConfig(kind="claude", model="fake-model"),
         preprocessing=PreprocessOptions(),
         resize=ResizeOptions(max_bytes_override=1_000_000),
@@ -340,14 +449,13 @@ def test_settings_dialog_resize_max_bytes_override_round_trips(qtbot):
         spend_ceiling=None,
         workers=4,
     )
-    qtbot.addWidget(dialog)
+    qtbot.addWidget(panel)
 
-    assert dialog.get_resize().max_bytes_override == 1_000_000
+    assert panel.get_resize().max_bytes_override == 1_000_000
 
 
-def test_settings_dialog_resize_max_bytes_override_defaults_to_none(qtbot):
-    dialog = SettingsDialog(
-        None,
+def test_settings_panel_resize_max_bytes_override_defaults_to_none(qtbot):
+    panel = _settings_panel(
         provider_config=ProviderConfig(kind="claude", model="fake-model"),
         preprocessing=PreprocessOptions(),
         resize=ResizeOptions(),
@@ -357,14 +465,13 @@ def test_settings_dialog_resize_max_bytes_override_defaults_to_none(qtbot):
         spend_ceiling=None,
         workers=4,
     )
-    qtbot.addWidget(dialog)
+    qtbot.addWidget(panel)
 
-    assert dialog.get_resize().max_bytes_override is None
+    assert panel.get_resize().max_bytes_override is None
 
 
-def test_settings_dialog_manual_model_override_hidden_for_non_local_kinds(qtbot):
-    dialog = SettingsDialog(
-        None,
+def test_settings_panel_manual_model_override_hidden_for_non_local_kinds(qtbot):
+    panel = _settings_panel(
         provider_config=ProviderConfig(kind="claude", model="fake-model"),
         preprocessing=PreprocessOptions(),
         resize=ResizeOptions(),
@@ -374,19 +481,18 @@ def test_settings_dialog_manual_model_override_hidden_for_non_local_kinds(qtbot)
         spend_ceiling=None,
         workers=4,
     )
-    qtbot.addWidget(dialog)
+    qtbot.addWidget(panel)
 
     # `isVisible()` needs the whole ancestor chain shown on screen; `isHidden()`
     # reflects the explicit visibility flag we set, regardless of the (unshown,
-    # in tests) top-level dialog.
-    assert dialog.manual_model_checkbox.isHidden() is True
+    # in tests) top-level widget.
+    assert panel.manual_model_checkbox.isHidden() is True
 
 
-def test_settings_dialog_manual_model_override_used_for_lm_studio(qtbot):
+def test_settings_panel_manual_model_override_used_for_lm_studio(qtbot):
     """LM Studio/llama.cpp only (spec §2.3): a checked manual override takes
     priority over whatever is currently selected in the detected-models combo."""
-    dialog = SettingsDialog(
-        None,
+    panel = _settings_panel(
         provider_config=ProviderConfig(kind="lm_studio", model=""),
         preprocessing=PreprocessOptions(),
         resize=ResizeOptions(),
@@ -396,18 +502,17 @@ def test_settings_dialog_manual_model_override_used_for_lm_studio(qtbot):
         spend_ceiling=None,
         workers=4,
     )
-    qtbot.addWidget(dialog)
+    qtbot.addWidget(panel)
 
-    assert dialog.manual_model_checkbox.isHidden() is False
-    dialog.manual_model_checkbox.setChecked(True)
-    dialog.manual_model_edit.setText("my-forced-model")
+    assert panel.manual_model_checkbox.isHidden() is False
+    panel.manual_model_checkbox.setChecked(True)
+    panel.manual_model_edit.setText("my-forced-model")
 
-    assert dialog.get_provider_config().model == "my-forced-model"
+    assert panel.get_provider_config().model == "my-forced-model"
 
 
-def test_settings_dialog_manual_model_override_unchecked_uses_combo(qtbot):
-    dialog = SettingsDialog(
-        None,
+def test_settings_panel_manual_model_override_unchecked_uses_combo(qtbot):
+    panel = _settings_panel(
         provider_config=ProviderConfig(kind="llama_cpp", model="from-combo"),
         preprocessing=PreprocessOptions(),
         resize=ResizeOptions(),
@@ -417,17 +522,16 @@ def test_settings_dialog_manual_model_override_unchecked_uses_combo(qtbot):
         spend_ceiling=None,
         workers=4,
     )
-    qtbot.addWidget(dialog)
+    qtbot.addWidget(panel)
 
-    dialog.manual_model_edit.setText("should-be-ignored")
+    panel.manual_model_edit.setText("should-be-ignored")
     # checkbox left unchecked => manual override must not apply
 
-    assert dialog.get_provider_config().model == "from-combo"
+    assert panel.get_provider_config().model == "from-combo"
 
 
-def test_settings_dialog_ui_language_round_trips(qtbot):
-    dialog = SettingsDialog(
-        None,
+def test_settings_panel_ui_language_round_trips(qtbot):
+    panel = _settings_panel(
         provider_config=ProviderConfig(kind="claude", model="fake-model"),
         preprocessing=PreprocessOptions(),
         resize=ResizeOptions(),
@@ -438,14 +542,13 @@ def test_settings_dialog_ui_language_round_trips(qtbot):
         workers=4,
         ui_language="ja",
     )
-    qtbot.addWidget(dialog)
+    qtbot.addWidget(panel)
 
-    assert dialog.get_ui_language() == "ja"
+    assert panel.get_ui_language() == "ja"
 
 
-def test_settings_dialog_ui_language_defaults_to_automatic(qtbot):
-    dialog = SettingsDialog(
-        None,
+def test_settings_panel_ui_language_defaults_to_automatic(qtbot):
+    panel = _settings_panel(
         provider_config=ProviderConfig(kind="claude", model="fake-model"),
         preprocessing=PreprocessOptions(),
         resize=ResizeOptions(),
@@ -455,9 +558,9 @@ def test_settings_dialog_ui_language_defaults_to_automatic(qtbot):
         spend_ceiling=None,
         workers=4,
     )
-    qtbot.addWidget(dialog)
+    qtbot.addWidget(panel)
 
-    assert dialog.get_ui_language() is None
+    assert panel.get_ui_language() is None
 
 
 def test_ui_language_survives_save_and_reload(qtbot, tmp_path):
@@ -657,8 +760,7 @@ def test_fetch_models_runs_in_a_thread_and_populates_the_combo(qtbot, monkeypatc
     provider = FakeProvider(models=models)
     monkeypatch.setattr("regeste.gui.worker.create_provider", lambda config: provider)
 
-    dialog = SettingsDialog(
-        None,
+    panel = _settings_panel(
         provider_config=ProviderConfig(kind="claude", model=""),
         preprocessing=PreprocessOptions(),
         resize=ResizeOptions(),
@@ -668,9 +770,9 @@ def test_fetch_models_runs_in_a_thread_and_populates_the_combo(qtbot, monkeypatc
         spend_ceiling=None,
         workers=4,
     )
-    qtbot.addWidget(dialog)
+    qtbot.addWidget(panel)
 
-    dialog._on_fetch_models_clicked()
+    panel._on_fetch_models_clicked()
     # waitUntil polls rather than awaiting the signal directly: the worker can complete
     # (and emit) before this test gets a chance to attach a waitSignal listener.
-    qtbot.waitUntil(lambda: dialog.model_combo.count() == 1, timeout=5000)
+    qtbot.waitUntil(lambda: panel.model_combo.count() == 1, timeout=5000)

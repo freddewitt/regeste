@@ -1,4 +1,5 @@
 import io
+import logging
 
 import pytest
 from PIL import Image
@@ -188,3 +189,31 @@ def test_preprocess_full_chain_still_works_with_cv2_present():
     result = preprocess(image, options)
 
     assert result.size == (120, 120)
+
+
+def test_preprocess_warns_when_cv2_missing_and_a_step_was_requested(monkeypatch, caplog):
+    """Verbose or not, silently skipping deskew/denoise/contrast because OpenCV isn't
+    installed is exactly the kind of footgun a user needs to see — always-visible
+    WARNING, not gated behind the Logs tab's "Verbose" checkbox.
+    """
+    monkeypatch.setattr(imaging, "cv2", None)
+    image = Image.new("RGB", (40, 40), color="white")
+
+    with caplog.at_level(logging.WARNING, logger="regeste.core.imaging"):
+        preprocess(image, PreprocessOptions(deskew=True, contrast=True))
+
+    messages = " | ".join(caplog.messages)
+    assert "deskew" in messages and "contrast" in messages
+    assert "OpenCV" in messages
+
+
+def test_resize_for_provider_logs_debug_resize_decision(caplog):
+    image = Image.new("RGB", (5000, 3000), color="white")
+    limits = {"claude": ProviderLimit(max_bytes=5 * 1024 * 1024, max_px=1000)}
+
+    with caplog.at_level(logging.DEBUG, logger="regeste.core.imaging"):
+        resize_for_provider(image, "claude", limits=limits)
+
+    messages = " | ".join(caplog.messages)
+    assert "5000x3000" in messages
+    assert "Encoded at quality=" in messages

@@ -16,7 +16,13 @@ from regeste.pivot import Piece
 from .common import filter_pieces
 
 
-def export_pdf(pieces: list[Piece], output_path: Path, *, validated_only: bool = False) -> Path:
+def export_pdf(
+    pieces: list[Piece],
+    output_path: Path,
+    *,
+    validated_only: bool = False,
+    target_language: str | None = None,
+) -> Path:
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
     from reportlab.lib.utils import ImageReader
@@ -51,14 +57,32 @@ def export_pdf(pieces: list[Piece], output_path: Path, *, validated_only: bool =
         y -= 0.7 * cm
         c.setFont(font_regular, 9)
         max_chars = int(half_width / (0.19 * cm))
-        for line in piece.transcription.splitlines() or [""]:
-            for chunk in textwrap.wrap(line, width=max_chars) or [""]:
-                if y < margin:
-                    c.showPage()
-                    y = page_height - margin
-                    c.setFont(font_regular, 9)
-                c.drawString(x, y, chunk)
-                y -= 0.4 * cm
+
+        def _draw_wrapped(text: str, y: float) -> float:
+            for line in text.splitlines() or [""]:
+                for chunk in textwrap.wrap(line, width=max_chars) or [""]:
+                    if y < margin:
+                        c.showPage()
+                        y = page_height - margin
+                        c.setFont(font_regular, 9)
+                    c.drawString(x, y, chunk)
+                    y -= 0.4 * cm
+            return y
+
+        y = _draw_wrapped(piece.transcription, y)
+
+        translation = (piece.translations or {}).get(target_language) if target_language else None
+        if translation:
+            y -= 0.3 * cm
+            if y < margin:
+                c.showPage()
+                y = page_height - margin
+            c.setFont(font_bold, 10)
+            c.drawString(x, y, f"Traduction ({target_language})")
+            y -= 0.5 * cm
+            c.setFont(font_regular, 9)
+            y = _draw_wrapped(translation.text, y)
+
         c.showPage()
     c.save()
     return output_path

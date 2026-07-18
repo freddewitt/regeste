@@ -186,3 +186,94 @@ def test_validated_only_filters_pieces(tmp_path, corpus):
     path = export_csv_light(corpus, tmp_path / "out.csv", validated_only=True)
     rows = list(csv.reader(path.open(encoding="utf-8")))
     assert len(rows) == 2  # header + only piece_a (fully validated)
+
+
+# --- target_language integration (Translation tab, Brique A) ------------------------
+
+
+def test_csv_light_includes_translation_column_only_when_language_given(tmp_path, corpus):
+    without = export_csv_light(corpus, tmp_path / "no_lang.csv")
+    rows_without = list(csv.reader(without.open(encoding="utf-8")))
+    assert "translation" not in rows_without[0]
+
+    with_lang = export_csv_light(corpus, tmp_path / "en.csv", target_language="en")
+    rows = list(csv.reader(with_lang.open(encoding="utf-8")))
+    assert rows[0][-1] == "translation"
+    assert rows[1][-1] == "Dear Sir,"  # piece_a has an "en" translation
+    assert rows[2][-1] == ""  # piece_b has none
+
+
+def test_csv_full_includes_translation_column(tmp_path, corpus):
+    path = export_csv_full(corpus, tmp_path / "out.csv", target_language="en")
+    rows = list(csv.reader(path.open(encoding="utf-8")))
+    assert rows[0][-1] == "translation"
+    assert rows[1][-1] == "Dear Sir,"
+
+
+def test_xlsx_includes_translation_column(tmp_path, corpus):
+    from openpyxl import load_workbook
+
+    path = export_xlsx(corpus, tmp_path / "out.xlsx", target_language="en")
+    wb = load_workbook(path)
+    overview = wb["Vue d'ensemble"]
+    assert overview.cell(row=1, column=10).value == "translation"
+    assert overview.cell(row=2, column=10).value == "Dear Sir,"
+
+
+def test_markdown_simple_includes_translation_when_available(tmp_path, corpus):
+    path = export_markdown(corpus, tmp_path / "out.md", target_language="en")
+    content = path.read_text(encoding="utf-8")
+    assert "Dear Sir," in content
+
+
+def test_markdown_obsidian_includes_translation_section(tmp_path, corpus):
+    out_dir = export_markdown_obsidian(corpus, tmp_path / "obsidian", target_language="en")
+    text = (out_dir / "a.jpg.md").read_text(encoding="utf-8")
+    assert "## Traduction (en)" in text
+    assert "Dear Sir," in text
+    other = (out_dir / "b.jpg.md").read_text(encoding="utf-8")
+    assert "Traduction" not in other
+
+
+def test_html_includes_translation_when_available(tmp_path, corpus):
+    path = export_html(corpus, tmp_path / "out.html", target_language="en")
+    content = path.read_text(encoding="utf-8")
+    assert "Dear Sir," in content
+
+
+def test_pdf_with_target_language_still_produces_valid_file(tmp_path, corpus):
+    path = export_pdf(corpus, tmp_path / "out.pdf", target_language="en")
+    assert path.read_bytes().startswith(b"%PDF")
+
+
+def test_sqlite_pieces_table_gets_translation_column(tmp_path, corpus):
+    path = export_sqlite(corpus, tmp_path / "out.db", target_language="en")
+    conn = sqlite3.connect(path)
+    try:
+        (translation,) = conn.execute(
+            "SELECT translation FROM pieces WHERE id = 'a.jpg'"
+        ).fetchone()
+        assert translation == "Dear Sir,"
+    finally:
+        conn.close()
+
+
+def test_dc_ead_mets_list_available_languages(tmp_path, corpus):
+    # piece_a: language_detected="" (not set in fixture) + translation "en" -> just "en"
+    dc_path = export_dublin_core(corpus, tmp_path / "dc.xml")
+    root = ET.parse(dc_path).getroot()
+    dc_ns = "{http://purl.org/dc/elements/1.1/}"
+    record_a = root[0]
+    languages = [el.text for el in record_a.findall(f"{dc_ns}language")]
+    assert languages == ["en"]
+
+    ead_path = export_ead(corpus, tmp_path / "ead.xml")
+    ead_root = ET.parse(ead_path).getroot()
+    lang_elements = ead_root.findall(".//language")
+    assert any(el.get("langcode") == "en" for el in lang_elements)
+
+    mets_dir = export_mets(corpus, tmp_path / "mets")
+    mets_root = ET.parse(mets_dir / "a.jpg.xml").getroot()
+    mets_ns = "{http://www.loc.gov/METS/}"
+    languages_mets = [el.text for el in mets_root.findall(f".//{mets_ns}language")]
+    assert languages_mets == ["en"]

@@ -14,9 +14,9 @@ from typing import Literal
 
 from regeste.core.costs import CostTracker, estimate_before_run
 from regeste.core.export import KNOWN_FORMATS, ExportOptions, export_registry
-from regeste.core.imaging import PreprocessOptions, ResizeOptions
+from regeste.core.imaging import IMAGE_EXTENSIONS, PreprocessOptions, ResizeOptions
 from regeste.core.project import ProjectConfig, ProviderConfig
-from regeste.core.providers import DEFAULT_BASE_URLS
+from regeste.core.providers import DEFAULT_BASE_URLS, PROVIDER_KINDS, REQUIRES_API_KEY_KINDS
 from regeste.core.registry import FileEntry, Registry
 from regeste.core.transcriber import DEFAULT_SYSTEM_PROMPT, ProgressState, Transcriber, create_provider
 from regeste.i18n import _, format_cost
@@ -29,17 +29,11 @@ from regeste.translation import (
     translate_piece,
 )
 
-PROVIDER_KINDS = ("claude", "gemini", "openai", "lm_studio", "llama_cpp", "ollama")
-REQUIRES_API_KEY_KINDS = ("claude", "gemini", "openai")
 # Vision capability isn't always exposed cleanly by these two local backends (spec
 # §2.3) - offer a manual "force this model" override as a last resort, after auto
 # detection has been attempted. Not offered for claude/gemini/openai/ollama, whose
 # detection the spec considers reliable enough on its own.
 MANUAL_MODEL_KINDS = ("lm_studio", "llama_cpp")
-
-IMAGE_EXTENSIONS = {
-    ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp", ".heic", ".heif", ".gif",
-}
 
 
 class _Aborted(Exception):

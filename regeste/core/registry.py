@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 import tempfile
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal
+
+logger = logging.getLogger(__name__)
 
 REGISTRY_FILENAME = "regeste.json"
 
@@ -49,14 +52,17 @@ class Registry:
     def load(cls, source_dir: Path) -> "Registry | None":
         path = source_dir / REGISTRY_FILENAME
         if not path.exists():
+            logger.debug("No registry at %s", path)
             return None
         data = json.loads(path.read_text(encoding="utf-8"))
         files = {name: FileEntry(**values) for name, values in data.get("files", {}).items()}
+        logger.debug("Registry loaded from %s: %d file(s)", path, len(files))
         return cls(source_dir=source_dir, meta=data.get("meta", {}), files=files)
 
     @classmethod
     def new(cls, source_dir: Path, meta: dict[str, Any], file_names: list[str]) -> "Registry":
         """Start a project, or start over from scratch (existing meta/status is overwritten)."""
+        logger.debug("Registry: starting new project in %s, %d file(s)", source_dir, len(file_names))
         files = {name: FileEntry() for name in file_names}
         registry = cls(source_dir=source_dir, meta=meta, files=files)
         registry.save()
@@ -65,8 +71,11 @@ class Registry:
     def files_to_process(self, mode: Literal["new", "resume"]) -> list[str]:
         """In resume mode: skip `ok`, continue `pending`, and auto-retry `error` (spec §5.2)."""
         if mode == "new":
-            return list(self.files.keys())
-        return [name for name, entry in self.files.items() if entry.status != "ok"]
+            result = list(self.files.keys())
+        else:
+            result = [name for name, entry in self.files.items() if entry.status != "ok"]
+        logger.debug("files_to_process(mode=%s): %d of %d file(s) due", mode, len(result), len(self.files))
+        return result
 
     def record_result(
         self,
@@ -91,6 +100,10 @@ class Registry:
             model=model,
             date=datetime.now(timezone.utc).isoformat(),
         )
+        logger.debug(
+            "%s: recorded ok (model=%s, tokens_in=%d, tokens_out=%d, cost=%.4f)",
+            file_name, model, tokens_in, tokens_out, cost,
+        )
 
     def record_error(self, file_name: str, message: str) -> None:
         self.files[file_name] = FileEntry(
@@ -98,6 +111,7 @@ class Registry:
             date=datetime.now(timezone.utc).isoformat(),
             error_message=message,
         )
+        logger.debug("%s: recorded error - %s", file_name, message)
 
     def save(self) -> None:
         """Atomic write: temp file + `os.replace`, never a corrupted registry (spec §5.1)."""
@@ -113,6 +127,7 @@ class Registry:
             with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             os.replace(tmp_path, self.path)
+            logger.debug("Registry saved to %s (%d file(s))", self.path, len(self.files))
         except BaseException:
             Path(tmp_path).unlink(missing_ok=True)
             raise

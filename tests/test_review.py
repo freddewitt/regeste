@@ -6,10 +6,12 @@ from regeste.pivot import Event, FieldValidation, Piece, Translation, hash_trans
 from regeste.review import (
     apply_correction,
     apply_field_validation,
+    apply_group_status,
     bulk_validate,
     ocr_events,
     sample,
     sorted_by_confidence,
+    sorted_for_review,
 )
 
 
@@ -112,3 +114,47 @@ def test_bulk_validate_only_above_threshold():
     assert all(v.status == "validated" for v in above.field_validations.values())
     assert below.field_validations == {}
     assert unknown.field_validations == {}
+
+
+def test_apply_group_status_validates_every_content_field():
+    piece = _piece()
+    apply_group_status(piece, "validated", changed_by="mb")
+    assert all(v.status == "validated" for v in piece.field_validations.values())
+    assert piece.field_validations["transcription"].validated_by == "mb"
+
+
+def test_apply_group_status_overwrites_heterogeneous_field_statuses():
+    piece = _piece()
+    apply_field_validation(piece, "call_number", "validated")
+    apply_field_validation(piece, "date", "to_review")
+    apply_group_status(piece, "to_review")
+    assert all(v.status == "to_review" for v in piece.field_validations.values())
+
+
+def test_apply_group_status_rejected_requires_note():
+    piece = _piece()
+    with pytest.raises(ValueError):
+        apply_group_status(piece, "rejected")
+
+
+def test_apply_group_status_rejected_with_note_applies_to_all_fields():
+    piece = _piece()
+    apply_group_status(piece, "rejected", rejection_note="illisible")
+    assert all(v.rejection_note == "illisible" for v in piece.field_validations.values())
+
+
+def test_sorted_for_review_orders_pending_then_validated_then_rejected():
+    pending = _piece(id="pending.jpg", confidence_score=0.5)
+    validated = _piece(id="validated.jpg", confidence_score=0.1)
+    apply_group_status(validated, "validated")
+    rejected = _piece(id="rejected.jpg", confidence_score=0.9)
+    apply_group_status(rejected, "rejected", rejection_note="illisible")
+    ordered = sorted_for_review([validated, rejected, pending])
+    assert [p.id for p in ordered] == ["pending.jpg", "validated.jpg", "rejected.jpg"]
+
+
+def test_sorted_for_review_preserves_confidence_order_within_bucket():
+    low = _piece(id="low.jpg", confidence_score=0.2)
+    high = _piece(id="high.jpg", confidence_score=0.8)
+    ordered = sorted_for_review([high, low])
+    assert [p.id for p in ordered] == ["low.jpg", "high.jpg"]

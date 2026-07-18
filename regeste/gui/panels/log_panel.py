@@ -3,6 +3,10 @@
 `QtLogHandler` re-emits every log record as a Qt signal so it can cross from a
 worker thread to the GUI thread safely; `LogPanel` appends it, preserving the
 user's scroll position unless they were already pinned to the bottom.
+
+"Verbose" only toggles the checkbox and emits `verbose_toggled`; actually
+switching the logger/handler level lives in `MainWindow._setup_logging` (this
+panel doesn't own the logger).
 """
 
 from __future__ import annotations
@@ -13,6 +17,7 @@ from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QHBoxLayout,
     QLineEdit,
     QPlainTextEdit,
@@ -41,12 +46,27 @@ class QtLogHandler(logging.Handler):
 
 
 class LogPanel(QWidget):
+    verbose_toggled = Signal(bool)
+
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._build_ui()
 
     def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
+
+        top_row = QHBoxLayout()
+        self.verbose_checkbox = QCheckBox(_("Verbose"))
+        self.verbose_checkbox.setToolTip(
+            _(
+                "Show exhaustive diagnostic logs (provider calls, image processing, "
+                "registry writes) — useful when troubleshooting an issue."
+            )
+        )
+        self.verbose_checkbox.toggled.connect(self.verbose_toggled.emit)
+        top_row.addWidget(self.verbose_checkbox)
+        top_row.addStretch()
+        layout.addLayout(top_row)
 
         search_row = QHBoxLayout()
         self.search_edit = QLineEdit()

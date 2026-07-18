@@ -21,13 +21,14 @@ from regeste.core.project import ProviderConfig
 from regeste.core.providers.base import ModelInfo
 from regeste.core.registry import Registry
 from regeste.core.transcriber import Transcriber, create_provider
-from regeste.pivot import Piece
+from regeste.pivot import Piece, save_piece
 from regeste.translation import TranslationProvider, translate_piece
 
 
 class TranscriptionWorker(QObject):
     """Runs `Transcriber.run()` off the GUI thread, relaying live progress."""
 
+    file_started = Signal(str)  # file name, emitted the moment it's dispatched
     progress = Signal(object)  # ProgressState
     finished = Signal()
     failed = Signal(str)
@@ -52,6 +53,7 @@ class TranscriptionWorker(QObject):
                 self._mode,
                 self._cost_tracker,
                 on_progress=lambda state: self.progress.emit(state),
+                on_start=lambda name: self.file_started.emit(name),
             )
         except Exception as exc:  # noqa: BLE001 - surfaced via `failed`, never a crash
             self.failed.emit(str(exc))
@@ -149,6 +151,62 @@ class TranslationWorker(QObject):
             self.failed.emit(str(exc))
             return
         self.succeeded.emit(self._piece)
+
+
+class TranslationBatchWorker(QObject):
+    """Runs `translate_piece()` over a whole corpus off the GUI thread, saving each
+    piece to the pivot as it completes — same "never lose completed work" pattern as
+    `Transcriber.run()`/`registry.save()`: one piece's failure doesn't stop the batch.
+    """
+
+    progress = Signal(int, int, str)  # done, total, piece_id
+    finished = Signal(list, list)  # succeeded piece_ids, [(piece_id, error message)]
+    failed = Signal(str)
+
+    def __init__(
+        self,
+        source_dir: Path,
+        pieces: list[Piece],
+        target_language: str,
+        provider: TranslationProvider,
+        model: str,
+        *,
+        glossary: dict[str, str] | None = None,
+        template: str | None = None,
+        enforce_guard: bool = True,
+    ) -> None:
+        super().__init__()
+        self._source_dir = source_dir
+        self._pieces = pieces
+        self._target_language = target_language
+        self._provider = provider
+        self._model = model
+        self._glossary = glossary
+        self._template = template
+        self._enforce_guard = enforce_guard
+
+    def run(self) -> None:
+        succeeded: list[str] = []
+        errors: list[tuple[str, str]] = []
+        total = len(self._pieces)
+        for done, piece in enumerate(self._pieces, start=1):
+            try:
+                translate_piece(
+                    piece,
+                    self._target_language,
+                    self._provider,
+                    self._model,
+                    glossary=self._glossary,
+                    source_language=piece.language_detected,
+                    template=self._template,
+                    enforce_guard=self._enforce_guard,
+                )
+                save_piece(self._source_dir, piece)
+                succeeded.append(piece.id)
+            except Exception as exc:  # noqa: BLE001 - one piece's failure doesn't stop the batch
+                errors.append((piece.id, str(exc)))
+            self.progress.emit(done, total, piece.id)
+        self.finished.emit(succeeded, errors)
 
 
 def start_worker(worker: QObject) -> QThread:

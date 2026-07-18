@@ -46,6 +46,7 @@ class CostTracker:
 
     rates: dict[str, Rate] = field(default_factory=lambda: dict(DEFAULT_RATES))
     observed_costs: list[float] = field(default_factory=list)
+    _cumulative_cost: float = field(default=0.0, init=False, repr=False)
 
     def rate_for(self, model: str) -> Rate:
         return self.rates.get(model, Rate(input_per_million=0.0, output_per_million=0.0))
@@ -55,16 +56,17 @@ class CostTracker:
 
     def record(self, cost: float) -> None:
         self.observed_costs.append(cost)
+        self._cumulative_cost += cost
 
     @property
     def total_cost(self) -> float:
-        return sum(self.observed_costs)
+        return self._cumulative_cost
 
     def project(self, total_files: int) -> Projection | None:
         """Projection = average of files processed so far × total, with observed min/max range."""
         if not self.observed_costs:
             return None
-        average = self.total_cost / len(self.observed_costs)
+        average = self._cumulative_cost / len(self.observed_costs)
         return Projection(
             projected_cost=average * total_files,
             min_cost_per_file=min(self.observed_costs),

@@ -6,10 +6,41 @@ import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
+_MEDIA_TYPES = {
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "png": "image/png",
+    "webp": "image/webp",
+    "gif": "image/gif",
+}
+
+
+def augment_prompt(prompt: str, forced_language: str | None = None) -> str:
+    """Append language instruction to prompt if forced_language is set."""
+    if not forced_language:
+        return prompt
+    return prompt + "\n\n" + "Respond in the following language: {lang}".format(lang=forced_language)
+
 _SECTION_RE = re.compile(
     r"##\s*(TEXT|DESCRIPTION|LANGUE)\s*\n(.*?)(?=\n##\s*(?:TEXT|DESCRIPTION|LANGUE)\s*\n|\Z)",
     re.IGNORECASE | re.DOTALL,
 )
+
+
+def parse_all(raw: str) -> tuple[str, str, str]:
+    """Single-pass extraction of `## TEXT`, `## DESCRIPTION` and `## LANGUE` sections.
+
+    Returns ``(text, description, language)`` — each empty string if the
+    corresponding section is absent.  Callers that need all three fields should
+    use this instead of calling ``parse_text_description`` and ``parse_language``
+    separately, to avoid scanning the response twice.
+    """
+    sections: dict[str, str] = {}
+    for m in _SECTION_RE.finditer(raw):
+        sections[m.group(1).upper()] = m.group(2).strip()
+    if not sections:
+        return raw.strip(), "", ""
+    return sections.get("TEXT", ""), sections.get("DESCRIPTION", ""), sections.get("LANGUE", "")
 
 
 def parse_text_description(raw: str) -> tuple[str, str]:
@@ -20,10 +51,8 @@ def parse_text_description(raw: str) -> tuple[str, str]:
     model didn't follow the format), the raw response is returned as text, with
     an empty description.
     """
-    sections = {m.group(1).upper(): m.group(2).strip() for m in _SECTION_RE.finditer(raw)}
-    if not sections:
-        return raw.strip(), ""
-    return sections.get("TEXT", ""), sections.get("DESCRIPTION", "")
+    text, description, _ = parse_all(raw)
+    return text, description
 
 
 def parse_language(raw: str) -> str:
@@ -32,10 +61,8 @@ def parse_language(raw: str) -> str:
     Optional section of the same output contract: a model that omits it (or an
     older prompt without it) simply yields "".
     """
-    for match in _SECTION_RE.finditer(raw):
-        if match.group(1).upper() == "LANGUE":
-            return match.group(2).strip()
-    return ""
+    _, _, language = parse_all(raw)
+    return language
 
 
 @dataclass(frozen=True)

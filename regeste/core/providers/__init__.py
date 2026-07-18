@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
-from .base import ModelInfo, Provider, TranscriptionResult, parse_text_description
+from .base import ModelInfo, Provider, TranscriptionResult, parse_all, parse_text_description
 from .claude import ClaudeProvider
 from .gemini import GeminiProvider
 from .openai_compat import OpenAICompatProvider
+
+PROVIDER_KINDS = ("claude", "gemini", "openai", "lm_studio", "llama_cpp", "ollama")
+REQUIRES_API_KEY_KINDS = ("claude", "gemini", "openai")
 
 # Default base_url, editable by the user in Settings (spec §2.2).
 DEFAULT_BASE_URLS = {
@@ -23,5 +26,7 @@ __all__ = [
     "ClaudeProvider",
     "GeminiProvider",
     "OpenAICompatProvider",
+    "PROVIDER_KINDS",
+    "REQUIRES_API_KEY_KINDS",
     "DEFAULT_BASE_URLS",
 ]

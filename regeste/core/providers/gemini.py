@@ -2,20 +2,21 @@
 
 from __future__ import annotations
 
+import logging
+
 from google import genai
 from google.genai import types
 
-from regeste.i18n import _
+from .base import (
+    _MEDIA_TYPES,
+    ModelInfo,
+    Provider,
+    TranscriptionResult,
+    augment_prompt,
+    parse_all,
+)
 
-from .base import ModelInfo, Provider, TranscriptionResult, parse_language, parse_text_description
-
-_MEDIA_TYPES = {
-    "jpg": "image/jpeg",
-    "jpeg": "image/jpeg",
-    "png": "image/png",
-    "webp": "image/webp",
-    "gif": "image/gif",
-}
+logger = logging.getLogger(__name__)
 
 # Known non-vision Gemini model families (embeddings, attributed Q&A) plus
 # any variant explicitly marked text-only. Everything else that supports
@@ -39,8 +40,9 @@ class GeminiProvider(Provider):
         return True
 
     def list_vision_models(self) -> list[ModelInfo]:
-        models = self._client.models.list()
-        return [
+        logger.debug("Gemini: fetching model list")
+        models = list(self._client.models.list())
+        result = [
             ModelInfo(id=m.name, display_name=m.display_name or m.name, requires_api_key=True)
             for m in models
             if "generateContent" in (m.supported_actions or [])
@@ -50,6 +52,8 @@ class GeminiProvider(Provider):
             # variants explicitly marked text-only (e.g. "*-text").
             and not _is_non_vision_model(m.name or "")
         ]
+        logger.debug("Gemini: %d model(s) returned, %d vision-capable", len(models), len(result))
+        return result
 
     def transcribe(
         self,
@@ -60,11 +64,11 @@ class GeminiProvider(Provider):
         forced_language: str | None = None,
         media_type: str = "jpeg",
     ) -> TranscriptionResult:
-        full_prompt = prompt
-        if forced_language:
-            full_prompt += "\n\n" + _("Respond in the following language: {lang}").format(
-                lang=forced_language
-            )
+        full_prompt = augment_prompt(prompt, forced_language)
+        logger.debug(
+            "Gemini transcribe: model=%s, image_bytes=%d, prompt_chars=%d",
+            model, len(image_bytes), len(full_prompt),
+        )
 
         response = self._client.models.generate_content(
             model=model,
@@ -76,13 +80,19 @@ class GeminiProvider(Provider):
             ],
         )
         raw = response.text or ""
-        text, description = parse_text_description(raw)
+        text, description, language = parse_all(raw)
         usage = response.usage_metadata
+        logger.debug(
+            "Gemini response: tokens_in=%d, tokens_out=%d, raw_chars=%d, text_chars=%d, description_chars=%d",
+            usage.prompt_token_count if usage else 0,
+            usage.candidates_token_count if usage else 0,
+            len(raw), len(text), len(description),
+        )
         return TranscriptionResult(
             text=text,
             description=description,
             tokens_in=usage.prompt_token_count if usage else 0,
             tokens_out=usage.candidates_token_count if usage else 0,
             model=model,
-            language=parse_language(raw),
+            language=language,
         )

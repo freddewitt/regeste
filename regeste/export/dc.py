@@ -7,7 +7,7 @@ from pathlib import Path
 
 from regeste.pivot import Piece
 
-from .common import filter_pieces, hierarchy_path
+from .common import available_languages, filter_pieces, hierarchy_path
 
 DC_NS = "http://purl.org/dc/elements/1.1/"
 OAI_DC_NS = "http://www.openarchives.org/OAI/2.0/oai_dc/"
@@ -17,7 +17,11 @@ ET.register_namespace("oai_dc", OAI_DC_NS)
 
 
 def export_dublin_core(
-    pieces: list[Piece], output_path: Path, *, validated_only: bool = False
+    pieces: list[Piece],
+    output_path: Path,
+    *,
+    validated_only: bool = False,
+    target_language: str | None = None,
 ) -> Path:
     pieces = filter_pieces(pieces, validated_only=validated_only)
     collection = ET.Element("collection")
@@ -41,6 +45,8 @@ def export_dublin_core(
             ET.SubElement(record, f"{{{DC_NS}}}rights").text = piece.access_conditions
         if piece.provenance:
             ET.SubElement(record, f"{{{DC_NS}}}source").text = piece.provenance
+        for lang in available_languages(piece):
+            ET.SubElement(record, f"{{{DC_NS}}}language").text = lang
         for lang, translation in (piece.translations or {}).items():
             translated = ET.SubElement(record, f"{{{DC_NS}}}description")
             translated.set("lang", lang)

@@ -66,14 +66,14 @@ def test_check_guards_warns_on_low_confidence_but_allows():
     piece = _validated_piece(confidence_score=0.2)
     guard = check_guards(piece)
     assert guard.allowed is True
-    assert any("basse" in w for w in guard.warnings)
+    assert any("low" in w for w in guard.warnings)
 
 
 def test_check_guards_warns_on_unknown_confidence():
     piece = _validated_piece(confidence_score=None)
     guard = check_guards(piece)
     assert guard.allowed is True
-    assert any("inconnue" in w for w in guard.warnings)
+    assert any("unknown" in w for w in guard.warnings)
 
 
 def test_check_guards_no_warning_on_high_confidence():

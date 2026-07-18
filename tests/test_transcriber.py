@@ -1,5 +1,7 @@
 """Run orchestrator tests — provider is entirely mocked, no real network calls."""
 
+import logging
+
 from PIL import Image
 
 from regeste.core.costs import CostTracker, Rate
@@ -103,6 +105,61 @@ def test_transcriber_processes_all_files_and_saves_the_registry(tmp_path):
     assert tracker.total_cost == 4.0
     reloaded = Registry.load(tmp_path)
     assert reloaded.files["a.jpg"].text == "A"
+
+
+def test_transcriber_calls_on_start_for_every_file_before_it_finishes(tmp_path):
+    """`on_start` is the "currently processing" signal a GUI needs to show feedback
+    before the (possibly slow) provider call returns - it must fire for every file,
+    each strictly before that same file's `on_progress` call."""
+    _image(tmp_path, "a.jpg")
+    _image(tmp_path, "b.jpg")
+    registry = Registry.new(tmp_path, meta={}, file_names=["a.jpg", "b.jpg"])
+    provider = FakeProvider(
+        responses=[
+            TranscriptionResult(text="A", description="", tokens_in=1, tokens_out=1, model="test-model"),
+            TranscriptionResult(text="B", description="", tokens_in=1, tokens_out=1, model="test-model"),
+        ]
+    )
+    tracker = CostTracker(rates={"test-model": Rate(input_per_million=2.0, output_per_million=0.0)})
+    transcriber = Transcriber(_config(tmp_path, workers=1), provider)
+
+    events = []
+    transcriber.run(
+        registry,
+        "new",
+        tracker,
+        on_start=lambda name: events.append(("start", name)),
+        on_progress=lambda state: events.append(("done", state.file_name)),
+    )
+
+    # Single worker => strictly sequential: start(a), done(a), start(b), done(b).
+    assert events == [
+        ("start", "a.jpg"),
+        ("done", "a.jpg"),
+        ("start", "b.jpg"),
+        ("done", "b.jpg"),
+    ]
+
+
+def test_transcriber_logs_debug_run_lifecycle(tmp_path, caplog):
+    """Verbose mode (Logs tab) surfaces the run's start/per-file/finish lifecycle at DEBUG."""
+    _image(tmp_path, "a.jpg")
+    registry = Registry.new(tmp_path, meta={}, file_names=["a.jpg"])
+    provider = FakeProvider(
+        responses=[
+            TranscriptionResult(text="A", description="", tokens_in=1, tokens_out=1, model="test-model")
+        ]
+    )
+    tracker = CostTracker(rates={"test-model": Rate(input_per_million=2.0, output_per_million=0.0)})
+    transcriber = Transcriber(_config(tmp_path), provider)
+
+    with caplog.at_level(logging.DEBUG, logger="regeste.core.transcriber"):
+        transcriber.run(registry, "new", tracker)
+
+    messages = " | ".join(caplog.messages)
+    assert "Run start" in messages
+    assert "a.jpg" in messages and "starting" in messages
+    assert "Run finished" in messages
 
 
 def test_transcriber_records_an_error_without_interrupting_the_run(tmp_path):

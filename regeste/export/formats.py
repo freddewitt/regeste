@@ -2,8 +2,13 @@
 
 `key -> (exporter_fn, output file/dir name)`. Exporters are read-only over the
 pivot corpus and share the signature `exporter(pieces, output_path, *,
-validated_only=False)`. Used by both the GUI Export tab and the CLI so the
-format list stays defined in one place. Labels (i18n) live in the GUI.
+validated_only=False, target_language=None)`. `target_language` is only
+meaningful for csv_light/csv_full/xlsx/markdown/markdown_obsidian/html/pdf/sqlite
+(the formats with no built-in multi-language support) — ead/dc/mets/zip accept
+and ignore it (dc already emits every available language unconditionally, ead/mets
+just list available languages via a `<language>` element regardless of it). Used
+by both the GUI Export tab and the CLI so the format list stays defined in one
+place. Labels (i18n) live in the GUI.
 """
 
 from __future__ import annotations

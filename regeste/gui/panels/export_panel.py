@@ -12,6 +12,7 @@ from pathlib import Path
 from PySide6.QtCore import QThread
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
@@ -26,7 +27,7 @@ from PySide6.QtWidgets import (
 )
 
 from regeste.export import PIVOT_EXPORTERS, export_review_journal
-from regeste.i18n import _
+from regeste.i18n import LANGUAGE_NAMES, _
 from regeste.pivot import load_corpus
 
 from ..worker import ExportWorker, start_worker
@@ -65,6 +66,7 @@ class ExportPanel(QWidget):
         self._source_dir: Path | None = None
         self._thread: QThread | None = None
         self._worker: ExportWorker | None = None
+        self._corpus: list | None = None
         self._build_ui()
         self.on_project_changed(None)
 
@@ -89,6 +91,16 @@ class ExportPanel(QWidget):
             formats_layout.addWidget(checkbox)
         self.validated_only_checkbox = QCheckBox(_("Validated pieces only"))
         formats_layout.addWidget(self.validated_only_checkbox)
+
+        language_row = QHBoxLayout()
+        language_row.addWidget(QLabel(_("Language (translation content, if available)")))
+        self.language_combo = QComboBox()
+        self.language_combo.addItem(_("None"), None)
+        for code, native_name in LANGUAGE_NAMES.items():
+            self.language_combo.addItem(native_name, code)
+        language_row.addWidget(self.language_combo)
+        language_row.addStretch()
+        formats_layout.addLayout(language_row)
         layout.addWidget(formats_group)
 
         buttons_row = QHBoxLayout()
@@ -115,6 +127,10 @@ class ExportPanel(QWidget):
 
     # --- Project synchronisation --------------------------------------------------
 
+    def set_corpus(self, corpus: list | None) -> None:
+        """Receive a pre-loaded corpus from the main window cache."""
+        self._corpus = corpus
+
     def on_project_changed(self, source_dir: Path | None) -> None:
         self._source_dir = source_dir
         self.export_button.setEnabled(source_dir is not None)
@@ -135,12 +151,13 @@ class ExportPanel(QWidget):
             QMessageBox.information(self, _("Export"), _("Select at least one format."))
             return
 
-        pieces = load_corpus(self._source_dir)
+        pieces = self._corpus if self._corpus is not None else load_corpus(self._source_dir)
         if not pieces:
             QMessageBox.information(self, _("Export"), _("No pivot data found for this project yet."))
             return
 
         validated_only = self.validated_only_checkbox.isChecked()
+        target_language = self.language_combo.currentData()
         target_dir = self._target_dir()
         target_dir.mkdir(parents=True, exist_ok=True)
 
@@ -150,7 +167,7 @@ class ExportPanel(QWidget):
             output_path = target_dir / output_name
             jobs.append(
                 (label_fn(), lambda exporter=exporter, output_path=output_path: exporter(
-                    pieces, output_path, validated_only=validated_only
+                    pieces, output_path, validated_only=validated_only, target_language=target_language
                 ))
             )
         self._run_jobs(jobs)
@@ -158,7 +175,7 @@ class ExportPanel(QWidget):
     def _on_journal_clicked(self) -> None:
         if self._source_dir is None:
             return
-        pieces = load_corpus(self._source_dir)
+        pieces = self._corpus if self._corpus is not None else load_corpus(self._source_dir)
         if not pieces:
             QMessageBox.information(self, _("Export"), _("No pivot data found for this project yet."))
             return

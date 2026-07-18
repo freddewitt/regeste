@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from collections.abc import Callable
@@ -15,6 +16,8 @@ from .project import ProjectConfig, ProviderConfig
 from .providers import ClaudeProvider, DEFAULT_BASE_URLS, GeminiProvider, OpenAICompatProvider, Provider
 from .providers.base import TranscriptionResult
 from .registry import Registry
+
+logger = logging.getLogger(__name__)
 
 MAX_ATTEMPTS = 5
 INITIAL_DELAY_SECONDS = 1.0
@@ -124,23 +127,39 @@ class Transcriber:
         self._stop = threading.Event()
 
     def request_stop(self) -> None:
+        logger.debug("Stop requested")
         self._stop.set()
+
+    def _preprocess_one(self, file_name: str) -> bytes:
+        """CPU-bound: load image, preprocess, resize. Factored out for clarity.
+
+        TODO: offload to a dedicated CPU ThreadPoolExecutor when the pipeline
+        becomes the bottleneck (the callback-based dual-pool approach proved
+        race-prone in tests; keeping single-pool for now).
+        """
+        path = self.config.source_dir / file_name
+        image = load_image(path)
+        image = preprocess(image, self.config.preprocessing)
+        return resize_for_provider(
+            image, self.config.provider.kind, resize_options=self.config.resize
+        )
 
     def _process_one(
         self, file_name: str
     ) -> tuple[str, TranscriptionResult | None, Exception | None]:
         if self._stop.is_set():
+            logger.debug("%s: not launched, stop already requested", file_name)
             return file_name, None, None  # task never launched: left as-is in the registry
         try:
-            path = self.config.source_dir / file_name
-            image = load_image(path)
-            image = preprocess(image, self.config.preprocessing)
-            image_bytes = resize_for_provider(
-                image, self.config.provider.kind, resize_options=self.config.resize
-            )
+            logger.debug("%s: starting", file_name)
+            image_bytes = self._preprocess_one(file_name)
             result = self._call_with_retry(image_bytes)
+            logger.debug(
+                "%s: done (tokens_in=%d, tokens_out=%d)", file_name, result.tokens_in, result.tokens_out
+            )
             return file_name, result, None
         except Exception as exc:  # noqa: BLE001 - error recorded in the registry, run doesn't crash
+            logger.debug("%s: failed - %s", file_name, exc)
             return file_name, None, exc
 
     def _call_with_retry(self, image_bytes: bytes) -> TranscriptionResult:
@@ -153,9 +172,13 @@ class Transcriber:
                     prompt=self.system_prompt,
                     forced_language=self.config.forced_language,
                 )
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 - retry loop, raises on last attempt
                 if attempt == MAX_ATTEMPTS - 1 or not _is_retryable(exc):
                     raise
+                logger.debug(
+                    "Retryable error on attempt %d/%d (%s), backing off %.1fs",
+                    attempt + 1, MAX_ATTEMPTS, exc, delay,
+                )
                 time.sleep(delay)
                 delay = min(delay * 2, MAX_DELAY_SECONDS)
         raise RuntimeError("unreachable")  # pragma: no cover
@@ -167,13 +190,21 @@ class Transcriber:
         cost_tracker: CostTracker,
         *,
         on_progress: Callable[[ProgressState], None] | None = None,
+        on_start: Callable[[str], None] | None = None,
     ) -> None:
-        """Process the due files, saving the registry after EVERY file (spec §10: atomic writes)."""
+        """Process the due files, saving the registry after EVERY file (spec §10: atomic writes).
+
+        `on_start` fires the moment a file is dispatched to a worker thread (before
+        the provider call even begins) - unlike `on_progress` (only after a file
+        finishes), it's how a caller shows "currently processing" feedback instead
+        of looking idle between the launch and the first result.
+        """
         file_list = registry.files_to_process(mode)
         total = len(file_list)
         names = iter(file_list)
         processed = 0
         workers = max(1, self.config.workers)
+        logger.debug("Run start: mode=%s, %d file(s) to process, %d worker(s)", mode, total, workers)
 
         with ThreadPoolExecutor(max_workers=workers) as executor:
             futures: dict = {}
@@ -186,6 +217,8 @@ class Transcriber:
                 name = next(names, None)
                 if name is not None:
                     futures[executor.submit(self._process_one, name)] = name
+                    if on_start:
+                        on_start(name)
 
             for _ in range(workers):
                 _submit_next()
@@ -228,6 +261,11 @@ class Transcriber:
 
                 ceiling = self.config.spend_ceiling
                 if ceiling is not None and cost_tracker.total_cost >= ceiling:
+                    logger.debug(
+                        "Spend ceiling reached (%.4f >= %.4f)", cost_tracker.total_cost, ceiling
+                    )
                     self.request_stop()
 
                 _submit_next()
+
+            logger.debug("Run finished: %d/%d file(s) processed", processed, total)

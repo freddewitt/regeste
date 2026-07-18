@@ -19,22 +19,22 @@ All four backends speak the same chat completions protocol
 from __future__ import annotations
 
 import base64
+import logging
 from typing import ClassVar
 
 import requests
 from openai import OpenAI
 
-from regeste.i18n import _
+from .base import (
+    _MEDIA_TYPES,
+    ModelInfo,
+    Provider,
+    TranscriptionResult,
+    augment_prompt,
+    parse_all,
+)
 
-from .base import ModelInfo, Provider, TranscriptionResult, parse_language, parse_text_description
-
-_MEDIA_TYPES = {
-    "jpg": "image/jpeg",
-    "jpeg": "image/jpeg",
-    "png": "image/png",
-    "webp": "image/webp",
-    "gif": "image/gif",
-}
+logger = logging.getLogger(__name__)
 
 # Naming heuristic for OpenAI / LM Studio / llama.cpp, since their APIs expose
 # no vision capability. Ollama doesn't use this list: it has its own reliable
@@ -72,6 +72,13 @@ class OpenAICompatProvider(Provider):
         self._client = OpenAI(base_url=base_url, api_key=api_key or "not-needed")
         self._base_url = base_url.rstrip("/")
         self._kind = kind
+        self._session: requests.Session | None = None
+
+    def _get_session(self) -> requests.Session:
+        """Return a reusable HTTP session (connection pooling across calls)."""
+        if self._session is None:
+            self._session = requests.Session()
+        return self._session
 
     @property
     def requires_api_key(self) -> bool:
@@ -80,8 +87,9 @@ class OpenAICompatProvider(Provider):
     def list_vision_models(self) -> list[ModelInfo]:
         if self._kind == "ollama":
             return self._list_ollama_vision_models()
+        logger.debug("%s: fetching model list from %s", self._kind, self._base_url)
         models = self._client.models.list()
-        return [
+        result = [
             ModelInfo(
                 id=m.id,
                 display_name=m.id,
@@ -91,6 +99,10 @@ class OpenAICompatProvider(Provider):
             for m in models.data
             if self._looks_like_vision(m.id)
         ]
+        logger.debug(
+            "%s: %d model(s) returned, %d vision-capable", self._kind, len(models.data), len(result)
+        )
+        return result
 
     def _looks_like_vision(self, model_id: str) -> bool:
         lowered = model_id.lower()
@@ -102,16 +114,19 @@ class OpenAICompatProvider(Provider):
         return self._base_url.removesuffix("/v1")
 
     def _list_ollama_vision_models(self) -> list[ModelInfo]:
-        tags = requests.get(f"{self._ollama_root()}/api/tags", timeout=10)
+        logger.debug("Ollama: fetching model tags from %s", self._ollama_root())
+        tags = self._get_session().get(f"{self._ollama_root()}/api/tags", timeout=10)
         tags.raise_for_status()
         names = [m["name"] for m in tags.json().get("models", [])]
+        logger.debug("Ollama: %d model(s) found", len(names))
 
         cache = self._ollama_vision_cache_by_base_url.setdefault(self._base_url, {})
 
         result = []
         for name in names:
             if name not in cache:
-                show = requests.post(
+                logger.debug("Ollama: checking vision capability for %s (not cached)", name)
+                show = self._get_session().post(
                     f"{self._ollama_root()}/api/show", json={"model": name}, timeout=10
                 )
                 show.raise_for_status()
@@ -121,6 +136,7 @@ class OpenAICompatProvider(Provider):
                 result.append(
                     ModelInfo(id=name, display_name=name, requires_api_key=False, base_url=self._base_url)
                 )
+        logger.debug("Ollama: %d vision-capable model(s)", len(result))
         return result
 
     def transcribe(
@@ -132,11 +148,11 @@ class OpenAICompatProvider(Provider):
         forced_language: str | None = None,
         media_type: str = "jpeg",
     ) -> TranscriptionResult:
-        full_prompt = prompt
-        if forced_language:
-            full_prompt += "\n\n" + _("Respond in the following language: {lang}").format(
-                lang=forced_language
-            )
+        full_prompt = augment_prompt(prompt, forced_language)
+        logger.debug(
+            "%s transcribe: model=%s, base_url=%s, image_bytes=%d, prompt_chars=%d",
+            self._kind, model, self._base_url, len(image_bytes), len(full_prompt),
+        )
 
         mime = _MEDIA_TYPES.get(media_type, "image/jpeg")
         data_url = f"data:{mime};base64,{base64.standard_b64encode(image_bytes).decode('ascii')}"
@@ -154,13 +170,20 @@ class OpenAICompatProvider(Provider):
             ],
         )
         raw = response.choices[0].message.content or ""
-        text, description = parse_text_description(raw)
+        text, description, language = parse_all(raw)
         usage = response.usage
+        logger.debug(
+            "%s response: tokens_in=%d, tokens_out=%d, raw_chars=%d, text_chars=%d, description_chars=%d",
+            self._kind,
+            usage.prompt_tokens if usage else 0,
+            usage.completion_tokens if usage else 0,
+            len(raw), len(text), len(description),
+        )
         return TranscriptionResult(
             text=text,
             description=description,
             tokens_in=usage.prompt_tokens if usage else 0,
             tokens_out=usage.completion_tokens if usage else 0,
             model=model,
-            language=parse_language(raw),
+            language=language,
         )

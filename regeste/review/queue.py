@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import random
 
-from regeste.pivot import CONTENT_FIELDS, Piece
+from regeste.pivot import CONTENT_FIELDS, Piece, global_status
 
 from .validation import apply_field_validation
 
@@ -19,6 +19,23 @@ def sorted_by_confidence(pieces: list[Piece]) -> list[Piece]:
         pieces,
         key=lambda p: (p.confidence_score is not None, p.confidence_score or 0.0),
     )
+
+
+def _review_list_bucket(piece: Piece) -> int:
+    status = global_status(piece)
+    if status == "validated":
+        return 1
+    if status == "rejected":
+        return 2
+    return 0  # "draft" / "to_review" — not yet decided, reviewed first
+
+
+def sorted_for_review(pieces: list[Piece]) -> list[Piece]:
+    """Review tab left-list ordering: not-yet-decided pieces first, then validated, then
+    rejected. Confidence order (lowest first) is preserved within each bucket — `sorted` is
+    stable, so bucket-sorting an already confidence-sorted list keeps that sub-order intact.
+    """
+    return sorted(sorted_by_confidence(pieces), key=_review_list_bucket)
 
 
 def sample(pieces: list[Piece], n: int, *, seed: int | None = None) -> list[Piece]:

@@ -5,9 +5,8 @@ named entities), calls a `TranslationProvider`, and writes the result into
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 from regeste.pivot import Piece, Translation, hash_transcription
+from regeste.pivot.utils import _now
 
 from .guards import check_guards
 from .provider import TranslationProvider
@@ -17,10 +16,6 @@ class TranslationBlocked(Exception):
     def __init__(self, reason: str) -> None:
         super().__init__(reason)
         self.reason = reason
-
-
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat()
 
 
 DEFAULT_TRANSLATION_PROMPT = """\

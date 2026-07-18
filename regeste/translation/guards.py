@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from regeste.i18n import _
 from regeste.pivot import Piece, global_status
 
 LOW_CONFIDENCE_THRESHOLD = 0.5
@@ -18,11 +19,11 @@ class GuardResult:
 
 def check_guards(piece: Piece) -> GuardResult:
     if global_status(piece) != "validated":
-        return GuardResult(allowed=False, blocked_reason="La pièce n'est pas validée.")
+        return GuardResult(allowed=False, blocked_reason=_("The piece is not validated."))
 
     warnings: list[str] = []
     if piece.confidence_score is None:
-        warnings.append("Confiance OCR inconnue.")
+        warnings.append(_("OCR confidence is unknown."))
     elif piece.confidence_score < LOW_CONFIDENCE_THRESHOLD:
-        warnings.append("Confiance OCR basse.")
+        warnings.append(_("OCR confidence is low."))
     return GuardResult(allowed=True, warnings=warnings)

@@ -10,7 +10,13 @@ from regeste.pivot import Piece, global_status
 from .common import filter_pieces
 
 
-def export_sqlite(pieces: list[Piece], output_path: Path, *, validated_only: bool = False) -> Path:
+def export_sqlite(
+    pieces: list[Piece],
+    output_path: Path,
+    *,
+    validated_only: bool = False,
+    target_language: str | None = None,
+) -> Path:
     pieces = filter_pieces(pieces, validated_only=validated_only)
     output_path.unlink(missing_ok=True)
     conn = sqlite3.connect(output_path)
@@ -22,7 +28,7 @@ def export_sqlite(pieces: list[Piece], output_path: Path, *, validated_only: boo
                 subseries TEXT, folder TEXT, date TEXT, sender TEXT, recipient TEXT,
                 transcription TEXT, summary TEXT, image_path TEXT,
                 access_conditions TEXT, provenance TEXT, confidence_score REAL,
-                status TEXT
+                status TEXT, translation TEXT
             )
             """
         )
@@ -34,8 +40,9 @@ def export_sqlite(pieces: list[Piece], output_path: Path, *, validated_only: boo
             "CREATE TABLE translations (piece_id TEXT, language TEXT, text TEXT, status TEXT)"
         )
         for piece in pieces:
+            translation = (piece.translations or {}).get(target_language) if target_language else None
             conn.execute(
-                "INSERT INTO pieces VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO pieces VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (
                     piece.id,
                     piece.call_number,
@@ -53,6 +60,7 @@ def export_sqlite(pieces: list[Piece], output_path: Path, *, validated_only: boo
                     piece.provenance,
                     piece.confidence_score,
                     global_status(piece),
+                    translation.text if translation else "",
                 ),
             )
             for event in piece.events:

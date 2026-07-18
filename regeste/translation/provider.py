@@ -11,10 +11,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from anthropic import Anthropic
-from google import genai
-from openai import OpenAI
-
 KINDS = ("openai", "lm_studio", "llama_cpp", "ollama")
 
 
@@ -52,8 +48,11 @@ def create_translation_provider(
 
 class ClaudeTranslationProvider(TranslationProvider):
     name = "claude"
+    # TODO: factoriser avec core/providers/claude.py — construction payload, appel HTTP, extraction usage
 
     def __init__(self, api_key: str) -> None:
+        from anthropic import Anthropic
+
         self._client = Anthropic(api_key=api_key)
 
     @property
@@ -77,8 +76,11 @@ class ClaudeTranslationProvider(TranslationProvider):
 
 class GeminiTranslationProvider(TranslationProvider):
     name = "gemini"
+    # TODO: factoriser avec core/providers/gemini.py — construction payload, appel HTTP, extraction usage
 
     def __init__(self, api_key: str) -> None:
+        from google import genai
+
         self._client = genai.Client(api_key=api_key)
 
     @property
@@ -98,10 +100,13 @@ class GeminiTranslationProvider(TranslationProvider):
 
 class OpenAICompatTranslationProvider(TranslationProvider):
     name = "openai_compat"
+    # TODO: factoriser avec core/providers/openai_compat.py — construction payload, appel HTTP, extraction usage
 
     def __init__(self, base_url: str, api_key: str | None = None, *, kind: str = "openai") -> None:
         if kind not in KINDS:
             raise ValueError(f"invalid kind: {kind!r} (expected {KINDS})")
+        from openai import OpenAI
+
         self._client = OpenAI(base_url=base_url, api_key=api_key or "not-needed")
         self._kind = kind
 

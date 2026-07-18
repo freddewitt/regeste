@@ -9,12 +9,18 @@ from pathlib import Path
 
 from regeste.pivot import Piece
 
-from .common import filter_pieces, hierarchy_path
+from .common import available_languages, filter_pieces, hierarchy_path
 
 _LEVEL_BY_DEPTH = {1: "series", 2: "subseries", 3: "file"}
 
 
-def export_ead(pieces: list[Piece], output_path: Path, *, validated_only: bool = False) -> Path:
+def export_ead(
+    pieces: list[Piece],
+    output_path: Path,
+    *,
+    validated_only: bool = False,
+    target_language: str | None = None,
+) -> Path:
     pieces = filter_pieces(pieces, validated_only=validated_only)
     ead = ET.Element("ead")
     archdesc = ET.SubElement(ead, "archdesc", {"level": "fonds"})
@@ -39,6 +45,8 @@ def export_ead(pieces: list[Piece], output_path: Path, *, validated_only: bool =
         ET.SubElement(did, "unitdate").text = piece.date
         ET.SubElement(did, "abstract").text = piece.summary
         langmaterial = ET.SubElement(did, "langmaterial")
+        for lang in available_languages(piece):
+            ET.SubElement(langmaterial, "language", {"langcode": lang})
         ET.SubElement(langmaterial, "note", {"type": "transcription"}).text = piece.transcription
 
         controlaccess = ET.SubElement(c, "controlaccess")

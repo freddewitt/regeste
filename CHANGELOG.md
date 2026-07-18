@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] – 2026-07-18
+
+### Added
+- **Translation catalogs completed** — 26 new UI strings for the Review simple/advanced modes, Verbose logging toggle, Translation batch tab, Language selector in Export, Settings tab (3 sub-tabs OCR/Translation/General), and enriched Session 13 logs (starting/processing/token and cost details). Translated into 8 languages (fr, de, es, pt, ja, zh, ar, ru): 208 new translations, 0 fuzzy, 0 untranslated across all 9 catalogs.
+
+### Changed
+- **Version bump to 0.2.0** — project now at v0.2.0.
+
+### Performance
+- **Real-ESRGAN model caching** — `RealESRGANer` instance is now cached per `(model_name, device)` pair instead of being reloaded from disk for every image, eliminating redundant model loading during batch upscaling.
+- **Cost tracking O(n²) → O(1)** — `CostTracker.total_cost` now maintains a running `_cumulative_cost` updated in `record()`, avoiding a `sum()` over the entire history on every call. Same for input/output token totals.
+- **JPEG quality search linear → dichotomic** — replaced the linear descent (up to 6 full encodes) with a binary search on quality (range 10–95, max 8 iterations), significantly reducing re-encode overhead for oversized non-JPEG images.
+- **Image reader reuse in PDF export** — when both combined and per-file PDF exports are requested, the source image is opened once and shared between both passes via an `image_cache` dict, halving disk I/O for the image-heavy path.
+- **Combined text/description/language parsing** — `parse_all()` performs a single regex scan over the model response to extract all three fields (`## TEXT`, `## DESCRIPTION`, `## LANGUAGE`), replacing the previous double-scan pattern. The existing `parse_text_description()` and `parse_language()` are preserved as thin wrappers.
+- **HTTP session reuse** — `OpenAICompatProvider` now uses a persistent `requests.Session()` for all API calls and model-listing requests, reusing TCP connections instead of opening a new one per request.
+- **Lazy SDK imports** — heavy imports (`anthropic`, `google.genai`, `openai`) moved from module level into the constructors of their respective `TranslationProvider` subclasses, reducing startup overhead when only one provider is configured.
+- **Pre-process / network separation** — `Transcriber` now separates image pre-processing (CPU-bound) from provider API calls (I/O-bound); a TODO marks the future dual-pool path.
+- **HTML export search index** — the client-side search in HTML exports now uses a precomputed `search_index[]` of keyword strings per piece (title, description, shelfmark, etc.) instead of `JSON.stringify(p).toLowerCase().includes(q)` on the entire piece data.
+- **Corpus cache in GUI** — all panels (Review, Translation, Export) now share a central corpus cache in `MainWindow.get_corpus()`, invalidated on project changes, instead of each panel calling `load_corpus()` independently.
+
+## [0.1.2] – 2026-07-14
+
+### Added
+- **Settings tab** — the old "Settings..." button/modal dialog in Transcription is now a permanent tab, positioned just before Log, with three sub-tabs: OCR (provider/model, OCR prompt, image resizing/preprocessing, forced document language, costs, worker count), Translation (provider/model, "same model as OCR" checkbox), and General (interface language). A "Save settings" button replaces the old OK/Cancel.
+
+### Changed
+- The "Logs" tab is now labelled "Log".
+
 ## [0.1.1] – 2026-07-14
 
 ### Added

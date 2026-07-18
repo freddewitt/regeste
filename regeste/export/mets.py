@@ -8,7 +8,7 @@ from pathlib import Path
 
 from regeste.pivot import Piece
 
-from .common import filter_pieces
+from .common import available_languages, filter_pieces
 
 METS_NS = "http://www.loc.gov/METS/"
 PREMIS_NS = "info:lc/xmlns/premis-v2"
@@ -19,7 +19,13 @@ ET.register_namespace("premis", PREMIS_NS)
 ET.register_namespace("xlink", XLINK_NS)
 
 
-def export_mets(pieces: list[Piece], output_dir: Path, *, validated_only: bool = False) -> Path:
+def export_mets(
+    pieces: list[Piece],
+    output_dir: Path,
+    *,
+    validated_only: bool = False,
+    target_language: str | None = None,
+) -> Path:
     """Writes one `<piece_id>.xml` METS document per piece into `output_dir`; returns the dir."""
     pieces = filter_pieces(pieces, validated_only=validated_only)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -32,6 +38,8 @@ def export_mets(pieces: list[Piece], output_dir: Path, *, validated_only: bool =
         ET.SubElement(xml_data, "title").text = piece.call_number
         ET.SubElement(xml_data, "abstract").text = piece.summary
         ET.SubElement(xml_data, "transcription").text = piece.transcription
+        for lang in available_languages(piece):
+            ET.SubElement(xml_data, "language").text = lang
 
         amd_sec = ET.SubElement(mets, f"{{{METS_NS}}}amdSec")
         digiprov = ET.SubElement(amd_sec, f"{{{METS_NS}}}digiprovMD", {"ID": "digiprov1"})
