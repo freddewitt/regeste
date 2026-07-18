@@ -25,6 +25,7 @@ graphify-out/
 .opencode/
 .tokensave/
 .claude/
+.serena/
 .graphifyignore
 
 # Session working notes, internal specs & assistant instructions — kept local
