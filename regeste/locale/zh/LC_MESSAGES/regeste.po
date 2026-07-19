@@ -162,7 +162,7 @@ msgstr "转录"
 
 #: regeste/cli/app.py:233 regeste/gui/main_window.py:347
 msgid "Literal"
-msgstr "SQLite"
+msgstr "字面"
 
 #: regeste/cli/app.py:234 regeste/gui/main_window.py:348
 msgid "Hypotheses"
