@@ -13,7 +13,7 @@ import pytest
 from openpyxl import load_workbook
 from PIL import Image as PILImage
 
-from regeste.core.registry import FileEntry, Registry
+from regeste.core.registry import FileEntry, Registry, SourceInfo, TranscriptionInfo
 from regeste.export import (
     FIELD_MAPPING,
     export_csv_light,
@@ -63,9 +63,9 @@ def corpus(tmp_path):
         source_dir=source_dir,
         meta={"provider": {"kind": "claude"}},
         files={
-            "a.jpg": FileEntry(status="ok", text="Cher Monsieur, je vous écris depuis Lyon.", model="claude-x"),
-            "b.jpg": FileEntry(status="ok", text="Second courrier.", model="claude-x"),
-            "c.jpg": FileEntry(status="ok", text="Troisième pièce.", model="claude-x"),
+            "a.jpg": FileEntry(transcription=TranscriptionInfo(status="ok", text="Cher Monsieur, je vous écris depuis Lyon.", model="claude-x")),
+            "b.jpg": FileEntry(transcription=TranscriptionInfo(status="ok", text="Second courrier.", model="claude-x")),
+            "c.jpg": FileEntry(transcription=TranscriptionInfo(status="ok", text="Troisième pièce.", model="claude-x")),
         },
     )
     pieces = build_pieces_from_registry(registry, source_dir)

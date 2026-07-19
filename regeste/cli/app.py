@@ -17,7 +17,7 @@ from regeste.core.export import KNOWN_FORMATS, ExportOptions, export_registry
 from regeste.core.imaging import IMAGE_EXTENSIONS, PreprocessOptions, ResizeOptions
 from regeste.core.project import ProjectConfig, ProviderConfig
 from regeste.core.providers import DEFAULT_BASE_URLS, PROVIDER_KINDS, REQUIRES_API_KEY_KINDS
-from regeste.core.registry import FileEntry, Registry
+from regeste.core.registry import FileEntry, Registry, SourceInfo
 from regeste.core.transcriber import DEFAULT_SYSTEM_PROMPT, ProgressState, Transcriber, create_provider
 from regeste.core.transcription_mode import TranscriptionMode
 from regeste.i18n import _, format_cost
@@ -115,8 +115,8 @@ def _ask_source_dir(io: IO) -> Path | None:
 
 def _print_registry_summary(registry: Registry, io: IO) -> None:
     total = len(registry.files)
-    ok = sum(1 for entry in registry.files.values() if entry.status == "ok")
-    error = sum(1 for entry in registry.files.values() if entry.status == "error")
+    ok = sum(1 for entry in registry.files.values() if entry.transcription.status == "ok")
+    error = sum(1 for entry in registry.files.values() if entry.transcription.status == "error")
     pending = total - ok - error
     io.print_func(
         _("Existing project found: {total} files ({ok} ok, {error} error, {pending} pending)").format(
@@ -127,9 +127,18 @@ def _print_registry_summary(registry: Registry, io: IO) -> None:
 
 def _sync_new_files(registry: Registry, source_dir: Path) -> None:
     """Add images that showed up in `source_dir` since the last session (spec §9)."""
+    existing_displays = {registry.display_name(k) for k in registry.files}
+    batch_id = source_dir.name
     for name in _list_images(source_dir):
-        if name not in registry.files:
-            registry.files[name] = FileEntry()
+        if name not in existing_displays:
+            prefixed_name = f"{batch_id}_{name}"
+            registry.files[prefixed_name] = FileEntry(
+                source=SourceInfo(
+                    batch_id=batch_id,
+                    physical_path=str(source_dir / name),
+                    imported=False,
+                ),
+            )
 
 
 def _configure_provider(io: IO) -> ProviderConfig:
@@ -414,13 +423,16 @@ def _configure_new_project(
     )
 
 
-def _print_progress(state: ProgressState, io: IO) -> None:
+def _print_progress(state: ProgressState, io: IO, registry: Registry | None = None) -> None:
     if state.projection is not None:
         projected = _("~{amount}").format(amount=format_cost(state.projection.projected_cost))
     else:
         projected = _("not enough data yet")
+    # state.file_name is a registry key; use display_name() to strip the
+    # batch_id prefix when the registry is available.
+    display_name = registry.display_name(state.file_name) if registry else state.file_name
     line = _("{file} - {processed}/{total} - cost: {cost} - projected: {projected}").format(
-        file=state.file_name,
+        file=display_name,
         processed=state.processed,
         total=state.total,
         cost=format_cost(state.total_cost),
@@ -430,8 +442,8 @@ def _print_progress(state: ProgressState, io: IO) -> None:
 
 
 def _print_summary(registry: Registry, cost_tracker: CostTracker, io: IO) -> None:
-    ok = sum(1 for entry in registry.files.values() if entry.status == "ok")
-    error = sum(1 for entry in registry.files.values() if entry.status == "error")
+    ok = sum(1 for entry in registry.files.values() if entry.transcription.status == "ok")
+    error = sum(1 for entry in registry.files.values() if entry.transcription.status == "error")
     total = len(registry.files)
     io.print_func(
         _("Done: {ok} ok, {error} error, {total} total - total cost: {cost}").format(
@@ -466,7 +478,7 @@ def _run_transcription(
     cost_tracker = CostTracker(rates=config.rates)
 
     def on_progress(state: ProgressState) -> None:
-        _print_progress(state, io)
+        _print_progress(state, io, registry)
 
     def handle_sigint(signum, frame) -> None:
         # Calls request_stop() instead of letting KeyboardInterrupt unwind through

@@ -11,11 +11,13 @@ from pathlib import Path
 from typing import Literal
 
 from PySide6.QtCore import QThread, Qt, QTimer, Signal
+from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
     QButtonGroup,
     QCheckBox,
     QComboBox,
+    QDialog,
     QFileDialog,
     QFrame,
     QGridLayout,
@@ -38,15 +40,18 @@ from regeste.core.costs import CostTracker, DEFAULT_RATES, Rate, estimate_before
 from regeste.core.export import ExportOptions, KNOWN_FORMATS, export_registry
 from regeste.core.imaging import IMAGE_EXTENSIONS, PreprocessOptions, ResizeOptions
 from regeste.core.project import ProjectConfig, ProviderConfig
-from regeste.core.registry import FileEntry, Registry
+from regeste.core.registry import FileEntry, Registry, SourceInfo
 from regeste.core.transcriber import DEFAULT_SYSTEM_PROMPT, ProgressState, Transcriber, create_provider
 from regeste.core.transcription_mode import TranscriptionMode
 from regeste.i18n import LANGUAGE_NAMES, _, format_cost, is_rtl, set_language
 from regeste.pivot import build_pieces_from_registry, load_corpus, load_piece as load_pivot_piece, save_piece as save_pivot_piece
 
+from .import_dialog import BatchImportDialog
+from .import_worker import BatchImportWorker, list_importable_images
 from .panels import ExportPanel, LogPanel, QtLogHandler, ReviewPanel, SettingsPanel, TranslationPanel
+from .panels.export_panel import FORMAT_SPECS
 from .panels.log_panel import LOGGER_NAME
-from .worker import ModelFetchWorker, TranscriptionWorker, start_worker
+from .worker import ExportWorker, ModelFetchWorker, TranscriptionWorker, start_worker
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +68,19 @@ def _list_images(source_dir: Path) -> list[str]:
 
 
 def _sync_new_files(registry: Registry, source_dir: Path) -> None:
+    """Add images that showed up in `source_dir` since the last session (spec §9)."""
+    existing_displays = {registry.display_name(k) for k in registry.files}
+    batch_id = source_dir.name
     for name in _list_images(source_dir):
-        if name not in registry.files:
-            registry.files[name] = FileEntry()
+        if name not in existing_displays:
+            prefixed_name = f"{batch_id}_{name}"
+            registry.files[prefixed_name] = FileEntry(
+                source=SourceInfo(
+                    batch_id=batch_id,
+                    physical_path=str(source_dir / name),
+                    imported=False,
+                ),
+            )
 
 
 def _confirm_overwrite(parent: QWidget) -> bool:
@@ -120,6 +135,12 @@ class MainWindow(QMainWindow):
         self._worker: TranscriptionWorker | None = None
         self._validate_thread: QThread | None = None
         self._validate_worker: ModelFetchWorker | None = None
+        self._import_thread: QThread | None = None
+        self._import_worker: BatchImportWorker | None = None
+        self._import_batch_id = ""
+        self._menu_export_thread: QThread | None = None
+        self._menu_export_worker: ExportWorker | None = None
+        self._menu_export_written: list = []
         self._in_flight_files: set[str] = set()
         self._spinner_frame = 0
         self._corpus_cache: list | None = None
@@ -168,8 +189,6 @@ class MainWindow(QMainWindow):
         outer_layout.addLayout(language_row)
 
         self.tabs = QTabWidget()
-        # Created before the Transcription tab: the panel now lives inside it
-        # (collapsible "Archival formats" section) instead of its own tab.
         self.export_panel = ExportPanel()
         self.tabs.addTab(self._scrollable(self._build_transcription_tab()), _("Transcription"))
 
@@ -179,7 +198,7 @@ class MainWindow(QMainWindow):
         self.translation_panel.translation_prompt_changed.connect(self._on_translation_prompt_changed)
         self.tabs.addTab(self._scrollable(self.translation_panel), _("Translation"))
         self._push_translation_context()
-        self.tabs.addTab(self._scrollable(self._build_output_type_tab()), _("Output type"))
+        self.tabs.addTab(self._scrollable(self.export_panel), _("Export archive"))
         self.settings_panel = SettingsPanel()
         self.settings_panel.settings_saved.connect(self._on_settings_saved)
         self._settings_tab_widget = self._scrollable(self.settings_panel)
@@ -197,6 +216,41 @@ class MainWindow(QMainWindow):
 
         outer_layout.addWidget(self.tabs)
         self.setCentralWidget(central)
+        self._setup_menu()
+
+    def _setup_menu(self) -> None:
+        # Clear first: `_build_ui()` also runs on language change (`_rebuild_ui`),
+        # and `menuBar()` persists across central-widget swaps - without this each
+        # rebuild would stack another "File" menu.
+        menu_bar = self.menuBar()
+        menu_bar.clear()
+        file_menu = menu_bar.addMenu(_("File"))
+
+        new_action = file_menu.addAction(_("New project…"))
+        new_action.triggered.connect(self._on_menu_new_project)
+
+        open_action = file_menu.addAction(_("Open project…"))
+        open_action.triggered.connect(self._on_menu_open_project)
+
+        self.import_batch_action = file_menu.addAction(_("Import batch..."))
+        self.import_batch_action.triggered.connect(self._on_import_batch_clicked)
+
+        file_menu.addSeparator()
+
+        save_action = file_menu.addAction(_("Save"))
+        save_action.setShortcut(QKeySequence.StandardKey.Save)
+        save_action.triggered.connect(self._on_menu_save)
+
+        file_menu.addSeparator()
+
+        export_action = file_menu.addAction(_("Export project…"))
+        export_action.triggered.connect(self._on_menu_export)
+
+        file_menu.addSeparator()
+
+        quit_action = file_menu.addAction(_("Quit Regeste"))
+        quit_action.setShortcut(QKeySequence.StandardKey.Quit)
+        quit_action.triggered.connect(QApplication.instance().quit)
 
     @staticmethod
     def _scrollable(widget: QWidget) -> QScrollArea:
@@ -243,6 +297,10 @@ class MainWindow(QMainWindow):
         form.addLayout(output_row, row, 1)
         layout.addWidget(identity_group)
 
+        # Two-column layout: left (Mode + Output mode) / right (Formats + Transcription mode).
+        config_columns = QHBoxLayout()
+
+        left_column = QVBoxLayout()
         mode_group = QGroupBox(_("Mode"))
         mode_layout = QHBoxLayout(mode_group)
         self.new_mode_radio = QRadioButton(_("New"))
@@ -254,7 +312,62 @@ class MainWindow(QMainWindow):
         mode_layout.addWidget(self.new_mode_radio)
         mode_layout.addWidget(self.resume_mode_radio)
         mode_layout.addStretch()
-        layout.addWidget(mode_group)
+        left_column.addWidget(mode_group)
+
+        output_mode_group = QGroupBox(_("Output mode"))
+        output_mode_layout = QHBoxLayout(output_mode_group)
+        self.combined_radio = QRadioButton(_("Combined (single file)"))
+        self.per_file_radio = QRadioButton(_("Per file"))
+        self.combined_radio.setChecked(True)
+        self._output_mode_group = QButtonGroup(self)
+        self._output_mode_group.addButton(self.combined_radio)
+        self._output_mode_group.addButton(self.per_file_radio)
+        output_mode_layout.addWidget(self.combined_radio)
+        output_mode_layout.addWidget(self.per_file_radio)
+        output_mode_layout.addStretch()
+        left_column.addWidget(output_mode_group)
+        left_column.addStretch()
+        config_columns.addLayout(left_column)
+
+        right_column = QVBoxLayout()
+        formats_group = QGroupBox(_("Formats"))
+        formats_layout = QHBoxLayout(formats_group)
+        self.format_checkboxes: dict[str, QCheckBox] = {}
+        for fmt in KNOWN_FORMATS:
+            checkbox = QCheckBox(fmt)
+            checkbox.setChecked(fmt in ("md", "json"))
+            self.format_checkboxes[fmt] = checkbox
+            formats_layout.addWidget(checkbox)
+        formats_layout.addStretch()
+        right_column.addWidget(formats_group)
+
+        transcription_mode_group = QGroupBox(_("Transcription mode"))
+        transcription_mode_layout = QVBoxLayout(transcription_mode_group)
+        radios_row = QHBoxLayout()
+        self.literal_radio = QRadioButton(_("Literal"))
+        self.hypotheses_radio = QRadioButton(_("Hypotheses"))
+        self.literal_radio.setChecked(True)
+        self._transcription_mode_group = QButtonGroup(self)
+        self._transcription_mode_group.addButton(self.literal_radio)
+        self._transcription_mode_group.addButton(self.hypotheses_radio)
+        radios_row.addWidget(self.literal_radio)
+        radios_row.addWidget(self.hypotheses_radio)
+        radios_row.addStretch()
+        transcription_mode_layout.addLayout(radios_row)
+        explanation = QLabel(
+            _(
+                "Literal: raw transcription. Hypotheses: illegible or ambiguous passages "
+                "are marked with contextual [[hypotheses]], and the notation legend is "
+                "included in the exports."
+            )
+        )
+        explanation.setWordWrap(True)
+        transcription_mode_layout.addWidget(explanation)
+        right_column.addWidget(transcription_mode_group)
+        right_column.addStretch()
+        config_columns.addLayout(right_column)
+
+        layout.addLayout(config_columns)
 
         controls_row = QHBoxLayout()
         self.launch_button = QPushButton(_("Launch"))
@@ -298,77 +411,11 @@ class MainWindow(QMainWindow):
         costs_layout.addWidget(self.projected_range_label, 1, 3)
         layout.addWidget(costs_group)
 
-        # The 12-format archival exporter (EAD/DC/METS/CSV/...) moved here from the
-        # old "Export" tab - advanced usage, hidden behind an explicit checkbox so
-        # the Transcription tab stays focused on the run.
-        archival_group = QGroupBox(_("Archival formats"))
-        archival_layout = QVBoxLayout(archival_group)
-        self.show_archival_checkbox = QCheckBox(_("Show advanced archival export"))
-        self.show_archival_checkbox.setChecked(False)
-        archival_layout.addWidget(self.show_archival_checkbox)
-        self.export_panel.setVisible(False)
-        self.show_archival_checkbox.toggled.connect(self.export_panel.setVisible)
-        archival_layout.addWidget(self.export_panel)
-        layout.addWidget(archival_group)
         layout.addStretch()
 
         return central
 
-    def _build_output_type_tab(self) -> QWidget:
-        """OCR output choices: combined/per-file, formats, transcription mode."""
-        central = QWidget()
-        layout = QVBoxLayout(central)
-
-        output_mode_group = QGroupBox(_("Output mode"))
-        output_mode_layout = QHBoxLayout(output_mode_group)
-        self.combined_radio = QRadioButton(_("Combined (single file)"))
-        self.per_file_radio = QRadioButton(_("Per file"))
-        self.combined_radio.setChecked(True)
-        self._output_mode_group = QButtonGroup(self)
-        self._output_mode_group.addButton(self.combined_radio)
-        self._output_mode_group.addButton(self.per_file_radio)
-        output_mode_layout.addWidget(self.combined_radio)
-        output_mode_layout.addWidget(self.per_file_radio)
-        output_mode_layout.addStretch()
-        layout.addWidget(output_mode_group)
-
-        formats_group = QGroupBox(_("Formats"))
-        formats_layout = QHBoxLayout(formats_group)
-        self.format_checkboxes: dict[str, QCheckBox] = {}
-        for fmt in KNOWN_FORMATS:
-            checkbox = QCheckBox(fmt)
-            checkbox.setChecked(fmt in ("md", "json"))
-            self.format_checkboxes[fmt] = checkbox
-            formats_layout.addWidget(checkbox)
-        formats_layout.addStretch()
-        layout.addWidget(formats_group)
-
-        transcription_mode_group = QGroupBox(_("Transcription mode"))
-        transcription_mode_layout = QVBoxLayout(transcription_mode_group)
-        radios_row = QHBoxLayout()
-        self.literal_radio = QRadioButton(_("Literal"))
-        self.hypotheses_radio = QRadioButton(_("Hypotheses"))
-        self.literal_radio.setChecked(True)
-        self._transcription_mode_group = QButtonGroup(self)
-        self._transcription_mode_group.addButton(self.literal_radio)
-        self._transcription_mode_group.addButton(self.hypotheses_radio)
-        radios_row.addWidget(self.literal_radio)
-        radios_row.addWidget(self.hypotheses_radio)
-        radios_row.addStretch()
-        transcription_mode_layout.addLayout(radios_row)
-        explanation = QLabel(
-            _(
-                "Literal: raw transcription. Hypotheses: illegible or ambiguous passages "
-                "are marked with contextual [[hypotheses]], and the notation legend is "
-                "included in the exports."
-            )
-        )
-        explanation.setWordWrap(True)
-        transcription_mode_layout.addWidget(explanation)
-        layout.addWidget(transcription_mode_group)
-        layout.addStretch()
-
-        return central
+    # Output type controls are now embedded in _build_transcription_tab()
 
     # --- Folder selection / project loading -----------------------------------------
 
@@ -412,6 +459,264 @@ class MainWindow(QMainWindow):
         self.translation_panel.set_corpus(corpus)
         self._push_translation_context()
         self.project_changed.emit(source_dir)
+
+    # --- File menu ---------------------------------------------------------------------
+
+    def _on_menu_new_project(self) -> None:
+        """Creates an empty project (no files) in a user-chosen folder."""
+        if self._is_busy():
+            QMessageBox.information(
+                self,
+                _("New project"),
+                _("Please wait for the current operation to finish before changing project."),
+            )
+            return
+        path = QFileDialog.getExistingDirectory(self, _("Select the project folder"))
+        if not path:
+            return
+        source_dir = Path(path)
+        # `Registry.new()` overwrites an existing regeste.json - never silently (AGENTS.md).
+        if Registry.load(source_dir) is not None and not _confirm_overwrite(self):
+            return
+        config = ProjectConfig(
+            project_name=source_dir.name,
+            source_dir=source_dir,
+            output_dir=source_dir,
+            provider=self._provider_config,
+        )
+        self._registry = Registry.new(source_dir, meta=config.to_meta(), file_names=[])
+        self._config = config
+        self.source_dir_edit.setText(str(source_dir))
+        self.new_mode_radio.setChecked(True)
+        self._apply_config(config)
+        self._push_cost_data()
+        self._sync_pivot_and_notify(source_dir)
+        logger.info(_("New project created in {path}").format(path=source_dir))
+
+    def _on_menu_open_project(self) -> None:
+        """Loads an existing project (folder containing a regeste.json)."""
+        if self._is_busy():
+            QMessageBox.information(
+                self,
+                _("Open project"),
+                _("Please wait for the current operation to finish before changing project."),
+            )
+            return
+        path = QFileDialog.getExistingDirectory(self, _("Select the project folder"))
+        if not path:
+            return
+        source_dir = Path(path)
+        registry = Registry.load(source_dir)
+        if registry is None:
+            QMessageBox.critical(
+                self, _("Error"), _("No existing project found in this folder to resume.")
+            )
+            return
+        config = ProjectConfig.from_meta(registry.meta)
+        self._registry = registry
+        self._config = config
+        self.source_dir_edit.setText(str(source_dir))
+        self.resume_mode_radio.setChecked(True)
+        self._apply_config(config)
+        self._push_cost_data()
+        self._sync_pivot_and_notify(source_dir)
+        logger.info(_("Project loaded from {path}").format(path=source_dir))
+
+    def _on_menu_save(self) -> None:
+        if self._registry is None:
+            return
+        # Capture any pending Settings edits too, so Ctrl+S never loses them.
+        self._sync_settings_from_panel()
+        self._persist_meta()
+        logger.info(_("Project saved."))
+
+    def _on_menu_export(self) -> None:
+        """Manual equivalent of the automatic end-of-run export: OCR formats per the
+        Transcription tab's checkboxes, plus the Export archive tab's selection."""
+        if self._registry is None or self._config is None:
+            QMessageBox.information(
+                self, _("Export"), _("Open a project folder before exporting.")
+            )
+            return
+        if self._is_busy():
+            QMessageBox.information(
+                self,
+                _("Export"),
+                _("Please wait for the current operation to finish before exporting."),
+            )
+            return
+        self._sync_settings_from_panel()
+        source_dir = Path(self.source_dir_edit.text())
+        # Rebuild the config from the live checkboxes so the export honors the
+        # current Transcription tab options, then persist it like a tab switch would.
+        self._config = self._build_project_config(source_dir)
+        self._persist_meta()
+
+        ocr_written = export_registry(
+            self._registry,
+            source_dir=source_dir,
+            output_dir=self._config.output_dir,
+            project_name=self._config.project_name,
+            options=self._config.export,
+        )
+        logger.info(_("Exported files:"))
+        for path in ocr_written:
+            logger.info(f"  {path}")
+        self._menu_export_written = list(ocr_written)
+
+        panel = self.export_panel
+        selected = [key for key, checkbox in panel.format_checkboxes.items() if checkbox.isChecked()]
+        if not selected:
+            self._show_menu_export_summary(self._menu_export_written)
+            return
+        pieces = self.get_corpus()
+        if not pieces:
+            logger.info(_("No pivot data found for this project yet."))
+            self._show_menu_export_summary(self._menu_export_written)
+            return
+
+        # Same job construction as `ExportPanel._on_export_clicked()`.
+        validated_only = panel.validated_only_checkbox.isChecked()
+        target_language = panel.language_combo.currentData()
+        target_dir = panel._target_dir()
+        target_dir.mkdir(parents=True, exist_ok=True)
+        jobs = []
+        for key in selected:
+            label_fn, exporter, output_name = FORMAT_SPECS[key]
+            output_path = target_dir / output_name
+            jobs.append(
+                (label_fn(), lambda exporter=exporter, output_path=output_path: exporter(
+                    pieces, output_path, validated_only=validated_only, target_language=target_language
+                ))
+            )
+
+        self.progress_bar.setMaximum(len(jobs))
+        self.progress_bar.setValue(0)
+        self._menu_export_worker = ExportWorker(jobs)
+        self._menu_export_thread = start_worker(self._menu_export_worker)
+        self._menu_export_worker.progress.connect(self._on_menu_export_progress)
+        self._menu_export_worker.finished.connect(self._on_menu_export_finished)
+        self._menu_export_worker.failed.connect(self._on_menu_export_failed)
+        self._menu_export_thread.start()
+
+    def _on_menu_export_progress(self, label: str) -> None:
+        self.progress_bar.setValue(self.progress_bar.value() + 1)
+        logger.info(f"{label} - OK")
+
+    def _on_menu_export_finished(self, written: list) -> None:
+        self._finish_menu_export()
+        logger.info(_("Export complete."))
+        self._show_menu_export_summary(self._menu_export_written, list(written))
+
+    def _on_menu_export_failed(self, message: str) -> None:
+        self._finish_menu_export()
+        logger.error(_("Export failed: {error}").format(error=message))
+        QMessageBox.critical(
+            self, _("Error"), _("Export failed: {error}").format(error=message)
+        )
+
+    def _finish_menu_export(self) -> None:
+        if self._menu_export_thread is not None:
+            self._menu_export_thread.wait(5000)
+        self._menu_export_thread = None
+        self._menu_export_worker = None
+
+    def _show_menu_export_summary(self, ocr_written: list, archive_written: list | None = None) -> None:
+        # Labels reuse the tab names so the summary maps directly to their source
+        # tab (Transcription's OCR checkboxes vs Export archive's pivot formats).
+        sections = []
+        if ocr_written:
+            sections.append(_("Transcription") + " :\n" + "\n".join(f"  {path}" for path in ocr_written))
+        if archive_written:
+            sections.append(_("Export archive") + " :\n" + "\n".join(f"  {path}" for path in archive_written))
+        QMessageBox.information(
+            self,
+            _("Export"),
+            _("Export complete. Files written:\n{files}").format(files="\n".join(sections)),
+        )
+
+    # --- Batch import ----------------------------------------------------------------
+
+    def _on_import_batch_clicked(self) -> None:
+        if self._registry is None:
+            QMessageBox.information(
+                self, _("Import batch"), _("Open a project folder before importing a batch.")
+            )
+            return
+        project_dir = Path(self.source_dir_edit.text())
+        dialog = BatchImportDialog(self, project_dir=project_dir, registry=self._registry)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        source_files = list_importable_images(dialog.source_folder)
+        if not source_files:
+            QMessageBox.information(
+                self, _("Import batch"), _("No image files found in this folder.")
+            )
+            return
+        batch_id = dialog.batch_id
+        logger.info(
+            _("Import: {count} image(s) from {folder} as batch \"{batch_id}\"").format(
+                count=len(source_files), folder=dialog.source_folder, batch_id=batch_id
+            )
+        )
+        self.progress_bar.setMaximum(max(len(source_files), 1))
+        self.progress_bar.setValue(0)
+        self.progress_label.setText(f"0 / {len(source_files)}")
+
+        self._import_worker = BatchImportWorker(
+            source_files, batch_id, project_dir, self._registry, dialog.keep_in_place
+        )
+        self._import_batch_id = batch_id
+        self._import_thread = start_worker(self._import_worker)
+        self._import_worker.progress.connect(self._on_import_progress)
+        # Bound methods of MainWindow only: Qt queues them to the GUI thread. A
+        # plain lambda would run inside the worker thread and `_finish_import`'s
+        # `thread.wait()` would deadlock-abort (QThread waited on from itself).
+        self._import_worker.finished.connect(self._on_import_finished)
+        self._import_worker.failed.connect(self._on_import_failed)
+        self._import_thread.start()
+        self.import_batch_action.setEnabled(False)
+        self.launch_button.setEnabled(False)
+
+    def _on_import_progress(self, done: int, total: int) -> None:
+        self.progress_bar.setMaximum(max(total, 1))
+        self.progress_bar.setValue(done)
+        self.progress_label.setText(f"{done} / {total}")
+
+    def _on_import_finished(self, count: int) -> None:
+        batch_id = self._import_batch_id
+        self._finish_import()
+        logger.info(
+            _("Import complete: {count} new file(s) in batch \"{batch_id}\".").format(
+                count=count, batch_id=batch_id
+            )
+        )
+        QMessageBox.information(
+            self,
+            _("Import batch"),
+            _("{count} new file(s) imported as batch \"{batch_id}\".").format(
+                count=count, batch_id=batch_id
+            ),
+        )
+        source_text = self.source_dir_edit.text().strip()
+        if source_text:
+            self._sync_pivot_and_notify(Path(source_text))
+        self._push_cost_data()
+
+    def _on_import_failed(self, message: str) -> None:
+        self._finish_import()
+        logger.error(_("Import failed: {error}").format(error=message))
+        QMessageBox.critical(
+            self, _("Error"), _("Import failed: {error}").format(error=message)
+        )
+
+    def _finish_import(self) -> None:
+        if self._import_thread is not None:
+            self._import_thread.wait(5000)
+        self._import_thread = None
+        self._import_worker = None
+        self.import_batch_action.setEnabled(True)
+        self.launch_button.setEnabled(True)
 
     def _apply_config(self, config: ProjectConfig) -> None:
         """Pushes a restored `ProjectConfig` into every field, main screen and Settings."""
@@ -504,6 +809,8 @@ class MainWindow(QMainWindow):
         underneath a live QThread's signal connections would crash it."""
         return (
             self._thread is not None
+            or self._import_thread is not None
+            or self._menu_export_thread is not None
             or self.export_panel._thread is not None
             or self.translation_panel._thread is not None
         )
@@ -560,7 +867,6 @@ class MainWindow(QMainWindow):
             "output_dir": self.output_dir_edit.text(),
             "combined": self.combined_radio.isChecked(),
             "hypotheses": self.hypotheses_radio.isChecked(),
-            "show_archival": self.show_archival_checkbox.isChecked(),
             "formats": {fmt: cb.isChecked() for fmt, cb in self.format_checkboxes.items()},
             "resume_mode": self.resume_mode_radio.isChecked(),
         }
@@ -579,7 +885,6 @@ class MainWindow(QMainWindow):
         self.per_file_radio.setChecked(not state["combined"])
         self.hypotheses_radio.setChecked(state["hypotheses"])
         self.literal_radio.setChecked(not state["hypotheses"])
-        self.show_archival_checkbox.setChecked(state["show_archival"])
         for fmt, checked in state["formats"].items():
             if fmt in self.format_checkboxes:
                 self.format_checkboxes[fmt].setChecked(checked)
@@ -763,6 +1068,8 @@ class MainWindow(QMainWindow):
 
         self.launch_button.setEnabled(False)
         self.stop_button.setEnabled(True)
+        # No registry mutation from another worker while a run is in flight.
+        self.import_batch_action.setEnabled(False)
 
     def _confirm_run(self, file_list: list[str], config: ProjectConfig) -> bool:
         """Rough cost estimate before launch (spec §6/§8), GUI counterpart of the
@@ -790,22 +1097,23 @@ class MainWindow(QMainWindow):
 
     def _on_progress(self, state: ProgressState) -> None:
         entry = self._registry.files.get(state.file_name) if self._registry else None
-        status = entry.status if entry else "error"
+        status = entry.transcription.status if entry else "error"
+        display = self._registry.display_name(state.file_name) if self._registry else state.file_name
         if status == "ok" and entry:
             message = _(
                 "{file} - done (model={model}, tokens_in={tin}, tokens_out={tout}, cost={cost})"
             ).format(
-                file=state.file_name,
-                model=entry.model,
-                tin=entry.tokens_in,
-                tout=entry.tokens_out,
-                cost=format_cost(entry.cost),
+                file=display,
+                model=entry.transcription.model,
+                tin=entry.transcription.tokens_in,
+                tout=entry.transcription.tokens_out,
+                cost=format_cost(entry.transcription.cost),
             )
             logger.info(message)
         else:
-            message = f"{state.file_name} - {status}"
-            if entry and entry.error_message:
-                message += f" - {entry.error_message}"
+            message = f"{display} - {status}"
+            if entry and entry.transcription.error_message:
+                message += f" - {entry.transcription.error_message}"
             logger.error(message)
 
         self._in_flight_files.discard(state.file_name)
@@ -813,7 +1121,7 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(state.processed)
         self._update_progress_label()
 
-        self.file_cost_label.setText(format_cost(entry.cost) if entry else "-")
+        self.file_cost_label.setText(format_cost(entry.transcription.cost) if entry else "-")
         self.total_cost_label.setText(format_cost(state.total_cost))
         if state.projection is not None:
             self.projected_cost_label.setText(f"~{format_cost(state.projection.projected_cost)}")
@@ -848,6 +1156,7 @@ class MainWindow(QMainWindow):
         self.spinner_label.setText("")
         self.launch_button.setEnabled(True)
         self.stop_button.setEnabled(False)
+        self.import_batch_action.setEnabled(True)
 
     def _advance_spinner(self) -> None:
         self._spinner_frame = (self._spinner_frame + 1) % len(_SPINNER_FRAMES)
@@ -857,7 +1166,9 @@ class MainWindow(QMainWindow):
         total = self.progress_bar.maximum()
         processed = self.progress_bar.value()
         if self._in_flight_files:
-            current = ", ".join(sorted(self._in_flight_files))
+            current = ", ".join(
+                sorted(self._registry.display_name(f) if self._registry else f for f in self._in_flight_files)
+            )
             self.progress_label.setText(
                 _("{done} / {total} - processing: {current}").format(
                     done=processed, total=total, current=current
@@ -868,7 +1179,8 @@ class MainWindow(QMainWindow):
 
     def _on_file_started(self, name: str) -> None:
         self._in_flight_files.add(name)
-        logger.info(_("{file} - starting").format(file=name))
+        display = self._registry.display_name(name) if self._registry else name
+        logger.info(_("{file} - starting").format(file=display))
         self._update_progress_label()
 
     def _export_and_log(self) -> None:

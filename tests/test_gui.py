@@ -139,12 +139,14 @@ def test_full_run_end_to_end_writes_registry_and_export(qtbot, tmp_path, monkeyp
 
     assert provider.calls == 2
     registry = Registry.load(source_dir)
-    assert registry.files["a.jpg"].status == "ok"
-    assert registry.files["b.jpg"].status == "ok"
+    batch_id = source_dir.name
+    assert registry.files[f"{batch_id}_a.jpg"].transcription.status == "ok"
+    assert registry.files[f"{batch_id}_b.jpg"].transcription.status == "ok"
 
     combined_json = output_dir / "my_project" / "combined" / "my_project.json"
     assert combined_json.exists()
     data = json.loads(combined_json.read_text())
+    # Export uses display_name (without batch_id prefix)
     assert {entry["name"] for entry in data} == {"a.jpg", "b.jpg"}
 
     assert window.launch_button.isEnabled() is True
@@ -191,6 +193,7 @@ def test_progress_label_names_files_currently_in_flight(qtbot):
     window.progress_bar.setMaximum(3)
     window.progress_bar.setValue(0)
 
+    # Without a registry, display_name falls back to the key itself
     window._on_file_started("a.jpg")
     assert "a.jpg" in window.progress_label.text()
 
@@ -203,30 +206,32 @@ def test_on_progress_logs_model_tokens_and_cost_on_success(qtbot, tmp_path, capl
     import logging
 
     from regeste.core.transcriber import ProgressState
-    from regeste.core.registry import FileEntry, Registry
+    from regeste.core.registry import FileEntry, Registry, TranscriptionInfo
 
     source_dir = tmp_path / "source"
     source_dir.mkdir()
     registry = Registry.new(source_dir, meta={}, file_names=["a.jpg"])
-    registry.files["a.jpg"] = FileEntry(
-        status="ok", model="fake-model", tokens_in=100, tokens_out=20, cost=0.01
+    batch_id = source_dir.name
+    registry.files[f"{batch_id}_a.jpg"] = FileEntry(
+        transcription=TranscriptionInfo(status="ok", model="fake-model", tokens_in=100, tokens_out=20, cost=0.01)
     )
 
     window = MainWindow()
     qtbot.addWidget(window)
     window._registry = registry
-    window._on_file_started("a.jpg")
+    window._on_file_started(f"{batch_id}_a.jpg")
 
     with caplog.at_level(logging.INFO, logger="regeste.gui.main_window"):
         window._on_progress(
-            ProgressState(file_name="a.jpg", processed=1, total=1, total_cost=0.01, projection=None)
+            ProgressState(file_name=f"{batch_id}_a.jpg", processed=1, total=1, total_cost=0.01, projection=None)
         )
 
     messages = " | ".join(caplog.messages)
+    # display_name strips the prefix for logging
     assert "a.jpg" in messages
     assert "fake-model" in messages
     assert "100" in messages and "20" in messages
-    assert "a.jpg" not in window._in_flight_files
+    assert f"{batch_id}_a.jpg" not in window._in_flight_files
 
 
 def test_launch_declining_cost_estimate_cancels_the_run(qtbot, tmp_path, monkeypatch):

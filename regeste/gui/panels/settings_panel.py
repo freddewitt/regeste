@@ -585,7 +585,7 @@ class SettingsPanel(QWidget):
 
     def set_cost_data(self, registry: Registry | None) -> None:
         """Rebuild the Costs tab from the registry's per-file entries.
-
+        
         Rebuilt from `Registry.files` (each `FileEntry` keeps its `cost`) rather
         than from the run's transient `CostTracker`, so the tab also reflects a
         project just opened from disk - no flying tracker state to keep alive.
@@ -595,9 +595,9 @@ class SettingsPanel(QWidget):
         provider_kind = ""
         if registry is not None:
             data = [
-                (name, entry.cost)
+                (registry.display_name(name), entry.transcription.cost)
                 for name, entry in sorted(registry.files.items())
-                if entry.status == "ok"
+                if entry.transcription.status == "ok"
             ]
             ceiling = registry.meta.get("spend_ceiling")
             provider = registry.meta.get("provider") or {}

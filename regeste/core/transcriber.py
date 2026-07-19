@@ -6,6 +6,7 @@ import logging
 import threading
 import time
 from collections.abc import Callable
+from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Literal
@@ -145,14 +146,18 @@ class Transcriber:
         logger.debug("Stop requested")
         self._stop.set()
 
-    def _preprocess_one(self, file_name: str) -> bytes:
+    def _preprocess_one(self, file_name: str, registry: Registry) -> bytes:
         """CPU-bound: load image, preprocess, resize. Factored out for clarity.
 
         TODO: offload to a dedicated CPU ThreadPoolExecutor when the pipeline
         becomes the bottleneck (the callback-based dual-pool approach proved
         race-prone in tests; keeping single-pool for now).
         """
-        path = self.config.source_dir / file_name
+        entry = registry.files.get(file_name)
+        if entry and entry.source.physical_path:
+            path = Path(entry.source.physical_path)
+        else:
+            path = self.config.source_dir / file_name
         image = load_image(path)
         image = preprocess(image, self.config.preprocessing)
         return resize_for_provider(
@@ -160,14 +165,14 @@ class Transcriber:
         )
 
     def _process_one(
-        self, file_name: str
+        self, file_name: str, registry: Registry
     ) -> tuple[str, TranscriptionResult | None, Exception | None]:
         if self._stop.is_set():
             logger.debug("%s: not launched, stop already requested", file_name)
             return file_name, None, None  # task never launched: left as-is in the registry
         try:
             logger.debug("%s: starting", file_name)
-            image_bytes = self._preprocess_one(file_name)
+            image_bytes = self._preprocess_one(file_name, registry)
             result = self._call_with_retry(image_bytes)
             logger.debug(
                 "%s: done (tokens_in=%d, tokens_out=%d)", file_name, result.tokens_in, result.tokens_out
@@ -231,7 +236,7 @@ class Transcriber:
                     return
                 name = next(names, None)
                 if name is not None:
-                    futures[executor.submit(self._process_one, name)] = name
+                    futures[executor.submit(self._process_one, name, registry)] = name
                     if on_start:
                         on_start(name)
 
@@ -260,6 +265,7 @@ class Transcriber:
                         cost=cost,
                         model=result.model,
                         language=result.language,
+                        transcription_mode=self.config.transcription_mode.value,
                     )
                 registry.save()
 

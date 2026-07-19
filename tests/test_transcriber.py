@@ -96,6 +96,7 @@ def test_transcriber_processes_all_files_and_saves_the_registry(tmp_path):
     _image(tmp_path, "a.jpg")
     _image(tmp_path, "b.jpg")
     registry = Registry.new(tmp_path, meta={}, file_names=["a.jpg", "b.jpg"])
+    batch_id = tmp_path.name
 
     provider = FakeProvider(
         responses=[
@@ -109,11 +110,11 @@ def test_transcriber_processes_all_files_and_saves_the_registry(tmp_path):
     transcriber.run(registry, "new", tracker)
 
     assert provider.calls == 2
-    assert registry.files["a.jpg"].status == "ok"
-    assert registry.files["b.jpg"].status == "ok"
+    assert registry.files[f"{batch_id}_a.jpg"].transcription.status == "ok"
+    assert registry.files[f"{batch_id}_b.jpg"].transcription.status == "ok"
     assert tracker.total_cost == 4.0
     reloaded = Registry.load(tmp_path)
-    assert reloaded.files["a.jpg"].text == "A"
+    assert reloaded.files[f"{batch_id}_a.jpg"].transcription.text == "A"
 
 
 def test_transcriber_calls_on_start_for_every_file_before_it_finishes(tmp_path):
@@ -123,6 +124,7 @@ def test_transcriber_calls_on_start_for_every_file_before_it_finishes(tmp_path):
     _image(tmp_path, "a.jpg")
     _image(tmp_path, "b.jpg")
     registry = Registry.new(tmp_path, meta={}, file_names=["a.jpg", "b.jpg"])
+    batch_id = tmp_path.name
     provider = FakeProvider(
         responses=[
             TranscriptionResult(text="A", description="", tokens_in=1, tokens_out=1, model="test-model"),
@@ -142,11 +144,12 @@ def test_transcriber_calls_on_start_for_every_file_before_it_finishes(tmp_path):
     )
 
     # Single worker => strictly sequential: start(a), done(a), start(b), done(b).
+    # Keys are prefixed with batch_id.
     assert events == [
-        ("start", "a.jpg"),
-        ("done", "a.jpg"),
-        ("start", "b.jpg"),
-        ("done", "b.jpg"),
+        ("start", f"{batch_id}_a.jpg"),
+        ("done", f"{batch_id}_a.jpg"),
+        ("start", f"{batch_id}_b.jpg"),
+        ("done", f"{batch_id}_b.jpg"),
     ]
 
 
@@ -154,6 +157,7 @@ def test_transcriber_logs_debug_run_lifecycle(tmp_path, caplog):
     """Verbose mode (Logs tab) surfaces the run's start/per-file/finish lifecycle at DEBUG."""
     _image(tmp_path, "a.jpg")
     registry = Registry.new(tmp_path, meta={}, file_names=["a.jpg"])
+    batch_id = tmp_path.name
     provider = FakeProvider(
         responses=[
             TranscriptionResult(text="A", description="", tokens_in=1, tokens_out=1, model="test-model")
@@ -167,7 +171,7 @@ def test_transcriber_logs_debug_run_lifecycle(tmp_path, caplog):
 
     messages = " | ".join(caplog.messages)
     assert "Run start" in messages
-    assert "a.jpg" in messages and "starting" in messages
+    assert f"{batch_id}_a.jpg" in messages and "starting" in messages
     assert "Run finished" in messages
 
 
@@ -175,6 +179,7 @@ def test_transcriber_records_an_error_without_interrupting_the_run(tmp_path):
     _image(tmp_path, "a.jpg")
     _image(tmp_path, "b.jpg")
     registry = Registry.new(tmp_path, meta={}, file_names=["a.jpg", "b.jpg"])
+    batch_id = tmp_path.name
 
     provider = FakeProvider(
         responses=[
@@ -186,7 +191,7 @@ def test_transcriber_records_an_error_without_interrupting_the_run(tmp_path):
 
     transcriber.run(registry, "new", CostTracker(rates={}))
 
-    statuses = {registry.files["a.jpg"].status, registry.files["b.jpg"].status}
+    statuses = {registry.files[f"{batch_id}_a.jpg"].transcription.status, registry.files[f"{batch_id}_b.jpg"].transcription.status}
     assert statuses == {"error", "ok"}
 
 
@@ -194,6 +199,7 @@ def test_transcriber_retries_on_retryable_error_then_succeeds(tmp_path, monkeypa
     monkeypatch.setattr("regeste.core.transcriber.time.sleep", lambda _: None)
     _image(tmp_path, "a.jpg")
     registry = Registry.new(tmp_path, meta={}, file_names=["a.jpg"])
+    batch_id = tmp_path.name
 
     error_429 = Exception("rate limited")
     error_429.status_code = 429
@@ -208,13 +214,14 @@ def test_transcriber_retries_on_retryable_error_then_succeeds(tmp_path, monkeypa
     transcriber.run(registry, "new", CostTracker(rates={}))
 
     assert provider.calls == 2
-    assert registry.files["a.jpg"].status == "ok"
+    assert registry.files[f"{batch_id}_a.jpg"].transcription.status == "ok"
 
 
 def test_transcriber_spend_ceiling_stops_the_run_cleanly(tmp_path):
     for name in ("a.jpg", "b.jpg", "c.jpg"):
         _image(tmp_path, name)
     registry = Registry.new(tmp_path, meta={}, file_names=["a.jpg", "b.jpg", "c.jpg"])
+    batch_id = tmp_path.name
 
     provider = FakeProvider(
         responses=[
@@ -229,7 +236,7 @@ def test_transcriber_spend_ceiling_stops_the_run_cleanly(tmp_path):
 
     transcriber.run(registry, "new", tracker)
 
-    statuses = [registry.files[name].status for name in ("a.jpg", "b.jpg", "c.jpg")]
+    statuses = [registry.files[f"{batch_id}_{name}"].transcription.status for name in ("a.jpg", "b.jpg", "c.jpg")]
     assert statuses.count("ok") == 2
     assert statuses.count("pending") == 1  # 3rd file never launched, clean stop after ceiling hit
 

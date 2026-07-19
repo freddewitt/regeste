@@ -52,8 +52,9 @@ class ExportOptions:
 
 
 def _successful_entries(registry: Registry) -> list[tuple[str, FileEntry]]:
+    """Return (display_name, entry) pairs for all successful entries, sorted by display name."""
     return sorted(
-        ((name, entry) for name, entry in registry.files.items() if entry.status == "ok"),
+        ((registry.display_name(name), entry) for name, entry in registry.files.items() if entry.transcription.status == "ok"),
         key=lambda pair: pair[0],
     )
 
@@ -64,8 +65,8 @@ def _render_markdown(entries: list[tuple[str, FileEntry]], *, hypotheses: bool =
         blocks.append(HYPOTHESES_BLOCK)
     for name, entry in entries:
         block = [f"**{name}** :"]
-        if entry.text:
-            block.append(f"\n{_('Text')}\n\n{entry.text}")
+        if entry.transcription.text:
+            block.append(f"\n{_('Text')}\n\n{entry.transcription.text}")
         if entry.description:
             block.append(f"\n{_('Description')}\n\n{entry.description}")
         blocks.append("\n".join(block))
@@ -78,8 +79,8 @@ def _render_text(entries: list[tuple[str, FileEntry]], *, hypotheses: bool = Fal
         blocks.append(HYPOTHESES_BLOCK)
     for name, entry in entries:
         block = [name]
-        if entry.text:
-            block.append(f"{_('Text')}:\n{entry.text}")
+        if entry.transcription.text:
+            block.append(f"{_('Text')}:\n{entry.transcription.text}")
         if entry.description:
             block.append(f"{_('Description')}:\n{entry.description}")
         blocks.append("\n\n".join(block))
@@ -90,14 +91,14 @@ def _render_json(entries: list[tuple[str, FileEntry]], *, hypotheses: bool = Fal
     data = [
         {
             "name": name,
-            "text": entry.text,
+            "text": entry.transcription.text,
             "description": entry.description,
-            "status": entry.status,
-            "tokens_in": entry.tokens_in,
-            "tokens_out": entry.tokens_out,
-            "cost": entry.cost,
-            "model": entry.model,
-            "date": entry.date,
+            "status": entry.transcription.status,
+            "tokens_in": entry.transcription.tokens_in,
+            "tokens_out": entry.transcription.tokens_out,
+            "cost": entry.transcription.cost,
+            "model": entry.transcription.model,
+            "date": entry.transcription.date,
         }
         for name, entry in entries
     ]
@@ -156,7 +157,9 @@ def _render_pdf(
         c.showPage()
     for name, entry in entries:
         y = page_height - margin
-        image_path = source_dir / name
+        # The 'name' here is already the display_name (from _successful_entries).
+        # We need to find the original file on disk using the physical_path from source.
+        image_path = Path(entry.source.physical_path) if entry.source.physical_path else source_dir / name
         if image_path.exists():
             if image_cache is not None:
                 if name not in image_cache:
@@ -178,7 +181,7 @@ def _render_pdf(
         c.drawString(margin, y, name)
         y -= 0.7 * cm
 
-        for label, content in ((_("Text"), entry.text), (_("Description"), entry.description)):
+        for label, content in ((_("Text"), entry.transcription.text), (_("Description"), entry.description)):
             if not content:
                 continue
             if y < margin:

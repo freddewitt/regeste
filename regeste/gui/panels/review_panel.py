@@ -96,6 +96,7 @@ def _status_dot_icon(status: str) -> QIcon:
     return QIcon(pixmap)
 
 
+
 class ReviewPanel(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -133,6 +134,9 @@ class ReviewPanel(QWidget):
         self.reset_queue_button = QPushButton(_("Show all"))
         self.reset_queue_button.clicked.connect(self._reload_pieces)
         bulk_layout.addWidget(self.reset_queue_button)
+        self.hypothesis_checkbox = QCheckBox(_("Hypothetical only"))
+        self.hypothesis_checkbox.toggled.connect(self._reload_pieces)
+        bulk_layout.addWidget(self.hypothesis_checkbox)
         bulk_layout.addStretch()
         outer.addWidget(bulk_group)
 
@@ -259,6 +263,9 @@ class ReviewPanel(QWidget):
         self._set_pieces(pieces)
 
     def _set_pieces(self, pieces: list[Piece]) -> None:
+        # Apply filter before sorting.
+        if self.hypothesis_checkbox.isChecked():
+            pieces = [p for p in pieces if p.hypothesis_mode]
         ordered = sorted_for_review(pieces)
         previous_id = self._current.id if self._current is not None else None
         self._pieces = ordered
@@ -266,7 +273,8 @@ class ReviewPanel(QWidget):
         self.piece_list.clear()
         for piece in ordered:
             status = global_status(piece)
-            label = f"{piece.call_number or piece.id} - {_status_label(status)}"
+            prefix = "H " if piece.hypothesis_mode else ""
+            label = f"{prefix}{piece.call_number or piece.id} - {_status_label(status)}"
             item = QListWidgetItem(_status_dot_icon(status), label)
             self.piece_list.addItem(item)
         enabled = bool(ordered)

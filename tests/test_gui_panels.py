@@ -65,25 +65,17 @@ def test_main_window_has_six_tabs(qtbot):
         "Transcription",
         "Review",
         "Translation",
-        "Output type",
+        "Export archive",
         "Settings",
         "Log",
     ]
 
 
-def test_export_panel_nested_collapsed_in_transcription_tab(qtbot):
-    """The 12-format archival exporter stays reachable from the Transcription
-    tab, hidden until "Show advanced archival export" is checked."""
+def test_export_panel_visible_in_own_tab(qtbot):
+    """The 12-format archival exporter is now a standalone tab."""
     window = MainWindow()
     qtbot.addWidget(window)
-    assert window.export_panel.isHidden()
-    assert not window.show_archival_checkbox.isChecked()
-
-    window.show_archival_checkbox.setChecked(True)
     assert not window.export_panel.isHidden()
-
-    window.show_archival_checkbox.setChecked(False)
-    assert window.export_panel.isHidden()
 
 
 def test_output_type_tab_drives_export_options_and_project_config(qtbot, tmp_path):
@@ -723,7 +715,7 @@ def test_prompt_dialog_warns_when_placeholder_removed(qtbot):
 
 def _registry_with_costs(source_dir, costs, *, ceiling=None):
     """A registry whose files were all processed ok, each with the given cost."""
-    from regeste.core.registry import FileEntry
+    from regeste.core.registry import TranscriptionInfo
 
     config = ProjectConfig(
         project_name="p",
@@ -734,8 +726,13 @@ def _registry_with_costs(source_dir, costs, *, ceiling=None):
     )
     names = [f"file_{i:02d}.jpg" for i in range(len(costs))]
     registry = Registry.new(source_dir, meta=config.to_meta(), file_names=names)
+    batch_id = source_dir.name
     for name, cost in zip(names, costs):
-        registry.files[name] = FileEntry(status="ok", cost=cost, model="fake-model")
+        key = f"{batch_id}_{name}"
+        entry = registry.files[key]
+        entry.transcription = TranscriptionInfo(status="ok", cost=cost, model="fake-model")
+        entry.source.batch_id = batch_id
+        entry.source.physical_path = str(source_dir / name)
     registry.save()
     return registry
 
@@ -813,16 +810,18 @@ def test_costs_tab_no_ceiling_hides_gauge(qtbot, tmp_path):
 
 
 def test_costs_tab_skips_non_ok_entries(qtbot, tmp_path):
-    from regeste.core.registry import FileEntry
+    from regeste.core.registry import FileEntry, TranscriptionInfo
     from regeste.gui.panels import SettingsPanel
 
     registry = _registry_with_costs(tmp_path, [0.01, 0.02], ceiling=None)
-    registry.files["file_01.jpg"] = FileEntry(status="error", error_message="boom")
-    registry.files["pending.jpg"] = FileEntry()
+    batch_id = tmp_path.name
+    registry.files[f"{batch_id}_file_01.jpg"] = FileEntry(transcription=TranscriptionInfo(status="error", error_message="boom"))
+    registry.files[f"{batch_id}_pending.jpg"] = FileEntry()
 
     panel = SettingsPanel()
     qtbot.addWidget(panel)
     panel.set_cost_data(registry)
+    # display_name strips the batch_id prefix
     assert panel.costs_chart._data == [("file_00.jpg", 0.01)]
 
 

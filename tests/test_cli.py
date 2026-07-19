@@ -177,12 +177,14 @@ def test_new_project_end_to_end_with_export(tmp_path, monkeypatch):
     assert provider.calls == 2
 
     registry = Registry.load(source_dir)
-    assert registry.files["a.jpg"].status == "ok"
-    assert registry.files["b.jpg"].status == "ok"
+    batch_id = source_dir.name
+    assert registry.files[f"{batch_id}_a.jpg"].transcription.status == "ok"
+    assert registry.files[f"{batch_id}_b.jpg"].transcription.status == "ok"
 
     combined_json = output_dir / "my_project" / "combined" / "my_project.json"
     assert combined_json.exists()
     data = json.loads(combined_json.read_text())
+    # Export uses display_name (without batch_id prefix)
     assert {entry["name"] for entry in data} == {"a.jpg", "b.jpg"}
 
     per_file_dir = output_dir / "my_project" / "per_file"
@@ -203,8 +205,9 @@ def test_resume_does_not_reask_provider(tmp_path, monkeypatch):
         provider=ProviderConfig(kind="claude", model="fake-model", api_key="fake-key"),
     )
     registry = Registry.new(source_dir, meta=config.to_meta(), file_names=["a.jpg"])
+    batch_id = source_dir.name
     registry.record_result(
-        "a.jpg", text="A", description="", tokens_in=10, tokens_out=5, cost=0.0, model="fake-model"
+        f"{batch_id}_a.jpg", text="A", description="", tokens_in=10, tokens_out=5, cost=0.0, model="fake-model"
     )
     registry.save()
 
@@ -240,8 +243,8 @@ def test_resume_does_not_reask_provider(tmp_path, monkeypatch):
     # a.jpg already ok, only b.jpg (added between sessions) was submitted to the provider.
     assert provider.calls == 1
     reloaded = Registry.load(source_dir)
-    assert reloaded.files["a.jpg"].status == "ok"
-    assert reloaded.files["b.jpg"].status == "ok"
+    assert reloaded.files[f"{batch_id}_a.jpg"].transcription.status == "ok"
+    assert reloaded.files[f"{batch_id}_b.jpg"].transcription.status == "ok"
     # create_provider is called twice: once to validate the resumed provider still
     # works (Fix 2), once to actually run the transcription.
     assert len(create_provider_calls) == 2
@@ -260,8 +263,9 @@ def test_resume_declined_and_overwrite_refused_leaves_registry_untouched(tmp_pat
         provider=ProviderConfig(kind="claude", model="fake-model", api_key="fake-key"),
     )
     registry = Registry.new(source_dir, meta=config.to_meta(), file_names=["a.jpg"])
+    batch_id = source_dir.name
     registry.record_result(
-        "a.jpg", text="A", description="", tokens_in=10, tokens_out=5, cost=0.0, model="fake-model"
+        f"{batch_id}_a.jpg", text="A", description="", tokens_in=10, tokens_out=5, cost=0.0, model="fake-model"
     )
     before = (source_dir / "regeste.json").read_text()
 
@@ -434,7 +438,8 @@ def test_resume_provider_validation_failure_aborts_cleanly_without_crash(tmp_pat
     assert exit_code == 0
     assert any("Provider unavailable" in message for message in messages)
     reloaded = Registry.load(source_dir)
-    assert reloaded.files["a.jpg"].status == "pending"
+    batch_id = source_dir.name
+    assert reloaded.files[f"{batch_id}_a.jpg"].transcription.status == "pending"
 
 
 def test_configure_provider_manual_model_override_when_none_detected(monkeypatch):
@@ -550,8 +555,9 @@ def test_cli_translates_transcribed_pieces_without_review(tmp_path):
         provider=ProviderConfig(kind="claude", model="ocr-model"),
     )
     registry = Registry.new(source, meta=config.to_meta(), file_names=["a.jpg"])
+    batch_id = source.name
     registry.record_result(
-        "a.jpg", text="Bonjour", description="", tokens_in=1, tokens_out=1,
+        f"{batch_id}_a.jpg", text="Bonjour", description="", tokens_in=1, tokens_out=1,
         cost=0.0, model="m", language="français",
     )
 
@@ -586,8 +592,9 @@ def test_cli_translates_to_multiple_target_languages(tmp_path):
         provider=ProviderConfig(kind="claude", model="ocr-model"),
     )
     registry = Registry.new(source, meta=config.to_meta(), file_names=["a.jpg"])
+    batch_id = source.name
     registry.record_result(
-        "a.jpg", text="Bonjour", description="", tokens_in=1, tokens_out=1,
+        f"{batch_id}_a.jpg", text="Bonjour", description="", tokens_in=1, tokens_out=1,
         cost=0.0, model="m", language="français",
     )
 
@@ -619,8 +626,9 @@ def test_cli_exports_archival_formats(tmp_path):
         provider=ProviderConfig(kind="claude", model="ocr-model"),
     )
     registry = Registry.new(source, meta=config.to_meta(), file_names=["a.jpg"])
+    batch_id = source.name
     registry.record_result(
-        "a.jpg", text="Bonjour", description="lettre", tokens_in=1, tokens_out=1,
+        f"{batch_id}_a.jpg", text="Bonjour", description="lettre", tokens_in=1, tokens_out=1,
         cost=0.0, model="m", language="français",
     )
     out = tmp_path / "exp"

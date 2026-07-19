@@ -85,6 +85,7 @@ class Piece:
     provenance: str = ""
     language_detected: str = ""
     confidence_score: float | None = None
+    hypothesis_mode: bool = False
     events: list[Event] = field(default_factory=list)
     field_validations: dict[str, FieldValidation] = field(default_factory=dict)
     status_history: dict[str, list[StatusChange]] = field(default_factory=dict)
@@ -109,6 +110,7 @@ class Piece:
             "provenance": self.provenance,
             "language_detected": self.language_detected,
             "confidence_score": self.confidence_score,
+            "hypothesis_mode": self.hypothesis_mode,
             "events": [asdict(e) for e in self.events],
             "field_validations": {k: asdict(v) for k, v in self.field_validations.items()},
             "status_history": {
@@ -149,6 +151,7 @@ class Piece:
             provenance=meta.get("provenance", ""),
             language_detected=meta.get("language_detected", ""),
             confidence_score=meta.get("confidence_score"),
+            hypothesis_mode=meta.get("hypothesis_mode", False),
             events=[Event(**e) for e in meta.get("events", [])],
             field_validations={
                 k: FieldValidation(**v) for k, v in meta.get("field_validations", {}).items()
