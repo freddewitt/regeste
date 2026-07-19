@@ -5,6 +5,7 @@ from reportlab.pdfbase import pdfmetrics
 
 from regeste.core.export import ExportOptions, export_registry
 from regeste.core.registry import Registry
+from regeste.core.transcription_mode import TranscriptionMode
 from regeste.i18n import set_language
 
 
@@ -168,3 +169,94 @@ def test_export_pdf_keeps_helvetica_for_non_cjk_interface(tmp_path):
     )
 
     assert (output / "my_project" / "combined" / "my_project.pdf").exists()
+
+
+_HYPOTHESES_OPTIONS = dict(transcription_mode=TranscriptionMode.HYPOTHESES)
+
+
+def test_hypotheses_mode_prepends_legend_to_combined_markdown(tmp_path):
+    registry = _registry_with_one_entry(tmp_path)
+    output = tmp_path / "output"
+
+    export_registry(
+        registry,
+        source_dir=tmp_path,
+        output_dir=output,
+        project_name="my_project",
+        options=ExportOptions(formats=frozenset({"md"}), per_file=False, **_HYPOTHESES_OPTIONS),
+    )
+
+    content = (output / "my_project" / "combined" / "my_project.md").read_text()
+    assert content.startswith("## HYPOTHESES")
+    assert "[[hypothesis:" in content
+    assert "Hello world" in content  # entries still exported below the legend
+
+
+def test_hypotheses_mode_prepends_legend_to_each_per_file_text(tmp_path):
+    registry = _registry_with_one_entry(tmp_path)
+    output = tmp_path / "output"
+
+    export_registry(
+        registry,
+        source_dir=tmp_path,
+        output_dir=output,
+        project_name="my_project",
+        options=ExportOptions(formats=frozenset({"txt"}), single_file=False, **_HYPOTHESES_OPTIONS),
+    )
+
+    content = (output / "my_project" / "per_file" / "archive.txt").read_text()
+    assert content.startswith("## HYPOTHESES")
+
+
+def test_hypotheses_mode_wraps_json_with_legend(tmp_path):
+    registry = _registry_with_one_entry(tmp_path)
+    output = tmp_path / "output"
+
+    export_registry(
+        registry,
+        source_dir=tmp_path,
+        output_dir=output,
+        project_name="my_project",
+        options=ExportOptions(formats=frozenset({"json"}), per_file=False, **_HYPOTHESES_OPTIONS),
+    )
+
+    payload = json.loads((output / "my_project" / "combined" / "my_project.json").read_text())
+    assert payload["transcription_mode"] == "hypotheses"
+    assert payload["hypotheses_legend"].startswith("## HYPOTHESES")
+    assert [entry["name"] for entry in payload["entries"]] == ["archive.jpg"]
+
+
+def test_literal_mode_keeps_exports_free_of_legend(tmp_path):
+    registry = _registry_with_one_entry(tmp_path)
+    output = tmp_path / "output"
+
+    export_registry(
+        registry,
+        source_dir=tmp_path,
+        output_dir=output,
+        project_name="my_project",
+        options=ExportOptions(formats=frozenset({"md", "json"}), per_file=False),
+    )
+
+    md = (output / "my_project" / "combined" / "my_project.md").read_text()
+    assert "## HYPOTHESES" not in md
+    payload = json.loads((output / "my_project" / "combined" / "my_project.json").read_text())
+    assert isinstance(payload, list)  # historical structure, no wrapper object
+
+
+def test_hypotheses_mode_pdf_gets_an_intro_legend_page(tmp_path):
+    registry = _registry_with_one_entry(tmp_path)
+    Image.new("RGB", (200, 100), color="white").save(tmp_path / "archive.jpg")
+    output = tmp_path / "output"
+
+    export_registry(
+        registry,
+        source_dir=tmp_path,
+        output_dir=output,
+        project_name="my_project",
+        options=ExportOptions(formats=frozenset({"pdf"}), per_file=False, **_HYPOTHESES_OPTIONS),
+    )
+
+    pdf_path = output / "my_project" / "combined" / "my_project.pdf"
+    assert pdf_path.exists()
+    assert pdf_path.stat().st_size > 0

@@ -14,6 +14,7 @@ from regeste.cli.app import IO, _Aborted, _export_archival_formats, _translate_c
 from regeste.core.project import ProjectConfig, ProviderConfig
 from regeste.core.providers.base import ModelInfo, Provider, TranscriptionResult
 from regeste.core.registry import Registry
+from regeste.core.transcription_mode import TranscriptionMode
 from regeste.pivot import load_piece
 from regeste.translation import TranslationResult
 
@@ -59,9 +60,13 @@ def _scripted_input(answers):
     return _input
 
 
-def _new_project_answers(source_dir, output_dir):
-    """Answers for the full new-project flow, up to and including "Start now? -> yes"."""
-    return [
+def _new_project_answers(source_dir, output_dir, *, mode_answer="1", skip_mode=False):
+    """Answers for the full new-project flow, up to and including "Start now? -> yes".
+
+    `skip_mode` drops the transcription-mode answer entirely (the question is not
+    asked when `--mode` pre-selects it).
+    """
+    answers = [
         str(source_dir),  # source folder
         "my_project",  # project name
         str(output_dir),  # output folder
@@ -69,6 +74,7 @@ def _new_project_answers(source_dir, output_dir):
         "1",  # model choice
         "",  # forced language
         "y",  # use default system prompt?
+        mode_answer,  # transcription mode (literal)
         "y",  # use same model for translation?
         "y",  # use default translation prompt?
         "n",  # deskew
@@ -87,6 +93,65 @@ def _new_project_answers(source_dir, output_dir):
         "n",  # translate the transcribed pieces now?
         "n",  # export to archival formats now?
     ]
+    if skip_mode:
+        answers.pop(7)
+    return answers
+
+
+def test_mode_flag_selects_hypotheses_without_asking(tmp_path, monkeypatch):
+    """`--mode hypotheses` (run(transcription_mode=...)) pre-selects the mode: the
+    interactive question is skipped, the mode is persisted, and exports carry the
+    [[...]] legend."""
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    output_dir = tmp_path / "output"
+    _image(source_dir, "a.jpg")
+
+    responses = [
+        TranscriptionResult(
+            text="A [[hypothesis: 1847]]", description="", tokens_in=10, tokens_out=5, model="fake-model"
+        ),
+    ]
+    provider = FakeProvider(responses=responses)
+    monkeypatch.setattr("regeste.cli.app.create_provider", lambda config: provider)
+
+    answers = _new_project_answers(source_dir, output_dir, skip_mode=True)
+    input_func = _scripted_input(answers)
+
+    exit_code = run(
+        input_func=input_func,
+        getpass_func=lambda prompt="": "fake-key",
+        print_func=lambda *a, **k: None,
+        transcription_mode=TranscriptionMode.HYPOTHESES,
+    )
+
+    assert exit_code == 0
+    registry = Registry.load(source_dir)
+    assert registry.meta["transcription_mode"] == "hypotheses"
+    combined_md = output_dir / "my_project" / "combined" / "my_project.md"
+    assert combined_md.read_text().startswith("## HYPOTHESES")
+
+
+def test_interactive_mode_question_selects_hypotheses(tmp_path, monkeypatch):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    output_dir = tmp_path / "output"
+    _image(source_dir, "a.jpg")
+
+    responses = [
+        TranscriptionResult(text="A", description="", tokens_in=10, tokens_out=5, model="fake-model"),
+    ]
+    provider = FakeProvider(responses=responses)
+    monkeypatch.setattr("regeste.cli.app.create_provider", lambda config: provider)
+
+    answers = _new_project_answers(source_dir, output_dir, mode_answer="2")
+    input_func = _scripted_input(answers)
+
+    exit_code = run(input_func=input_func, getpass_func=lambda prompt="": "fake-key", print_func=lambda *a, **k: None)
+
+    assert exit_code == 0
+    registry = Registry.load(source_dir)
+    assert registry.meta["transcription_mode"] == "hypotheses"
 
 
 def test_new_project_end_to_end_with_export(tmp_path, monkeypatch):
@@ -292,6 +357,7 @@ def test_new_project_with_custom_system_prompt_is_passed_to_transcriber(tmp_path
         "",  # forced language
         "n",  # use default system prompt? -> no
         "You are a custom prompt.",  # custom system prompt
+        "1",  # transcription mode (literal)
         "y",  # use same model for translation?
         "y",  # use default translation prompt?
         "n",  # deskew

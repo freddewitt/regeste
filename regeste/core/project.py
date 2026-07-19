@@ -13,6 +13,7 @@ from typing import Any
 from .costs import DEFAULT_RATES, Rate
 from .export import ExportOptions
 from .imaging import PreprocessOptions, ResizeOptions
+from .transcription_mode import TranscriptionMode
 
 
 @dataclass
@@ -39,6 +40,10 @@ class ProjectConfig:
     export: ExportOptions = field(
         default_factory=lambda: ExportOptions(formats=frozenset({"md", "json"}))
     )
+    # Canonical transcription mode for the OCR run (LITERAL keeps the historical
+    # prompt). `export.transcription_mode` mirrors it so exports include the
+    # [[...]] legend too - the GUI/CLI set both from the same control.
+    transcription_mode: TranscriptionMode = TranscriptionMode.LITERAL
     rates: dict[str, Rate] = field(default_factory=lambda: dict(DEFAULT_RATES))
     spend_ceiling: float | None = None
     workers: int = 4
@@ -65,7 +70,9 @@ class ProjectConfig:
                 "formats": sorted(self.export.formats),
                 "single_file": self.export.single_file,
                 "per_file": self.export.per_file,
+                "transcription_mode": self.export.transcription_mode.value,
             },
+            "transcription_mode": self.transcription_mode.value,
             "rates": {name: asdict(rate) for name, rate in self.rates.items()},
             "spend_ceiling": self.spend_ceiling,
             "workers": self.workers,
@@ -95,7 +102,13 @@ class ProjectConfig:
                 formats=frozenset(raw_export.get("formats", ["md", "json"])),
                 single_file=raw_export.get("single_file", True),
                 per_file=raw_export.get("per_file", True),
+                transcription_mode=TranscriptionMode.from_value(
+                    # Backward compat: older projects only have the top-level key
+                    # (or none at all) - fall back to it, then to LITERAL.
+                    raw_export.get("transcription_mode", meta.get("transcription_mode"))
+                ),
             ),
+            transcription_mode=TranscriptionMode.from_value(meta.get("transcription_mode")),
             rates=(
                 {name: Rate(**values) for name, values in raw_rates.items()}
                 if raw_rates

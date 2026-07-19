@@ -13,6 +13,12 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--lang", default=None, help="interface language, overrides LANG/LC_ALL (e.g. fr, en)"
     )
+    parser.add_argument(
+        "--mode",
+        choices=("literal", "hypotheses"),
+        default=None,
+        help="transcription mode (CLI only): pre-selects it for new projects, overrides it for resumed ones",
+    )
     return parser
 
 
@@ -29,8 +35,10 @@ def main(argv: list[str] | None = None) -> int:
         return run_gui()
 
     from regeste.cli import run
+    from regeste.core.transcription_mode import TranscriptionMode
 
-    return run()
+    mode = TranscriptionMode.from_value(args.mode) if args.mode else None
+    return run(transcription_mode=mode)
 
 
 if __name__ == "__main__":

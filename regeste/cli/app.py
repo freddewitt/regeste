@@ -8,7 +8,7 @@ from __future__ import annotations
 import getpass
 import signal
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Literal
 
@@ -19,6 +19,7 @@ from regeste.core.project import ProjectConfig, ProviderConfig
 from regeste.core.providers import DEFAULT_BASE_URLS, PROVIDER_KINDS, REQUIRES_API_KEY_KINDS
 from regeste.core.registry import FileEntry, Registry
 from regeste.core.transcriber import DEFAULT_SYSTEM_PROMPT, ProgressState, Transcriber, create_provider
+from regeste.core.transcription_mode import TranscriptionMode
 from regeste.i18n import _, format_cost
 from regeste.export import PIVOT_EXPORTERS
 from regeste.pivot import build_pieces_from_registry, load_piece, save_piece
@@ -217,6 +218,15 @@ def _configure_export(io: IO) -> ExportOptions:
     return ExportOptions(formats=formats, single_file=single_file, per_file=per_file)
 
 
+def _configure_transcription_mode(io: IO) -> TranscriptionMode:
+    """Literal (default) vs. hypotheses - affects both the OCR prompt and the exports."""
+    io.print_func(_("Transcription modes:"))
+    io.print_func(f"  1. {_('Literal')}")
+    io.print_func(f"  2. {_('Hypotheses')}")
+    index = _ask_choice_index(io, _("Transcription mode"), 2)
+    return (TranscriptionMode.LITERAL, TranscriptionMode.HYPOTHESES)[index]
+
+
 def _configure_system_prompt(io: IO) -> str | None:
     """New project only (spec: resume never re-asks anything already persisted).
 
@@ -359,7 +369,9 @@ def _export_archival_formats(registry: Registry, source_dir: Path, config: Proje
         io.print_func(f"  {path}")
 
 
-def _configure_new_project(source_dir: Path, io: IO) -> ProjectConfig:
+def _configure_new_project(
+    source_dir: Path, io: IO, transcription_mode: TranscriptionMode | None = None
+) -> ProjectConfig:
     project_name = _ask(io, _("Project name"), default=source_dir.name)
     output_dir = Path(_ask(io, _("Output folder"), default=str(source_dir)))
 
@@ -367,6 +379,9 @@ def _configure_new_project(source_dir: Path, io: IO) -> ProjectConfig:
 
     forced_language = _ask(io, _("Force document language (optional)"), default="") or None
     system_prompt = _configure_system_prompt(io)
+    # Pre-selected via --mode: the interactive question is skipped entirely.
+    if transcription_mode is None:
+        transcription_mode = _configure_transcription_mode(io)
     translation_provider, translation_same = _configure_translation_model(io)
     translation_prompt = _configure_translation_prompt(io)
 
@@ -377,6 +392,8 @@ def _configure_new_project(source_dir: Path, io: IO) -> ProjectConfig:
     spend_ceiling = _ask_float_optional(io, _("Spend ceiling in $ (optional)"))
 
     export_options = _configure_export(io)
+    # Mirror the mode into the export options so exports include the [[...]] legend.
+    export_options = replace(export_options, transcription_mode=transcription_mode)
 
     return ProjectConfig(
         project_name=project_name,
@@ -388,6 +405,7 @@ def _configure_new_project(source_dir: Path, io: IO) -> ProjectConfig:
         forced_language=forced_language,
         system_prompt=system_prompt,
         export=export_options,
+        transcription_mode=transcription_mode,
         workers=workers,
         spend_ceiling=spend_ceiling,
         translation_provider=translation_provider,
@@ -473,8 +491,14 @@ def run(
     input_func: Callable[[str], str] = input,
     getpass_func: Callable[[str], str] = getpass.getpass,
     print_func: Callable[..., None] = print,
+    transcription_mode: TranscriptionMode | None = None,
 ) -> int:
-    """Runs the full interactive flow (spec §9). Returns a process exit code."""
+    """Runs the full interactive flow (spec §9). Returns a process exit code.
+
+    `transcription_mode` comes from the `--mode` CLI flag: it pre-selects the mode
+    for new projects (skipping the question) and overrides a resumed project's
+    persisted mode for this session only (regeste.json is not rewritten).
+    """
     io = IO(input_func=input_func, getpass_func=getpass_func, print_func=print_func)
 
     source_dir = _ask_source_dir(io)
@@ -489,9 +513,15 @@ def run(
         if _ask_yes_no(io, _("Resume this project?"), default=True):
             mode = "resume"
             config = ProjectConfig.from_meta(registry.meta)
+            if transcription_mode is not None:
+                config = replace(
+                    config,
+                    transcription_mode=transcription_mode,
+                    export=replace(config.export, transcription_mode=transcription_mode),
+                )
             if _ask_yes_no(io, _("Modify the project settings?"), default=False):
                 try:
-                    config = _configure_new_project(source_dir, io)
+                    config = _configure_new_project(source_dir, io, transcription_mode)
                     registry.meta = config.to_meta()
                 except _Aborted:
                     io.print_func(_("Aborted."))
@@ -504,7 +534,7 @@ def run(
                 io.print_func(_("Aborted."))
                 return 0
             try:
-                config = _configure_new_project(source_dir, io)
+                config = _configure_new_project(source_dir, io, transcription_mode)
             except _Aborted:
                 io.print_func(_("Aborted."))
                 return 0
@@ -514,7 +544,7 @@ def run(
             )
     else:
         try:
-            config = _configure_new_project(source_dir, io)
+            config = _configure_new_project(source_dir, io, transcription_mode)
         except _Aborted:
             io.print_func(_("Aborted."))
             return 0

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] – 2026-07-19
+
+### Added
+- **Cost chart in Settings tab** — new 4th sub-tab "Costs" with QPainter-drawn bar chart (per-file cost, green-to-red gradient), cumulative red line overlay, dual Y-axis scale, hover tooltips, and a progress bar showing spent/ceiling with warning thresholds (orange at 80%, red when exceeded). Data rebuilt from Registry (no volatile state).
+- **Output type tab** — the Export tab is renamed to "Output type" and now hosts: radio group Combined/Per-file (exclusive), md/txt/json/pdf format checkboxes, and a radio group for transcription mode (Literal / Hypotheses with `## HYPOTHESES` block). The 12-format pivot ExportPanel is moved to the Transcription tab, collapsed by default under "Show advanced archival export".
+- **Hypotheses transcription mode** — new module `core/transcription_mode.py` with `TranscriptionMode` enum (LITERAL/HYPOTHESES). In HYPOTHESES mode, the system prompt includes a `## HYPOTHESES` block guiding the model to mark illegible passages with `[[hypothesis: ...]]` notation. The block is prepended to exports (md/txt/json/pdf).
+- **Translation prompt hidden by default** — the translation prompt editor is collapsed behind a "Show prompt"/"Hide prompt" toggle button, keeping the interface clean for non-advanced users.
+
+### Changed
+- **Version bump to 0.2.1** — project now at v0.2.1.
+- **CLI `--mode` flag** — new projects can pre-select Literal/Hypotheses mode; session override in resume mode.
+- **Transcription mode persisted** — `TranscriptionMode` stored in `Registry.meta` (root key + export key), backward-compatible with existing `regeste.json` files.
+
 ## [0.2.0] – 2026-07-18
 
 ### Added

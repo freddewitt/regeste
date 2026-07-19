@@ -10,7 +10,16 @@ from regeste.core.project import ProjectConfig, ProviderConfig
 from regeste.core.providers import ClaudeProvider, GeminiProvider, OpenAICompatProvider
 from regeste.core.providers.base import Provider, TranscriptionResult
 from regeste.core.registry import Registry
-from regeste.core.transcriber import Transcriber, _is_retryable, create_provider
+from regeste.core.transcriber import (
+    DEFAULT_SYSTEM_PROMPT,
+    HYPOTHESES_SYSTEM_PROMPT,
+    Transcriber,
+    _is_retryable,
+    create_provider,
+    default_prompt_for_mode,
+    resolve_ocr_placeholders,
+)
+from regeste.core.transcription_mode import TranscriptionMode
 
 
 class FakeProvider(Provider):
@@ -223,3 +232,44 @@ def test_transcriber_spend_ceiling_stops_the_run_cleanly(tmp_path):
     statuses = [registry.files[name].status for name in ("a.jpg", "b.jpg", "c.jpg")]
     assert statuses.count("ok") == 2
     assert statuses.count("pending") == 1  # 3rd file never launched, clean stop after ceiling hit
+
+
+def test_transcription_mode_from_value_is_lenient():
+    assert TranscriptionMode.from_value("hypotheses") is TranscriptionMode.HYPOTHESES
+    assert TranscriptionMode.from_value("literal") is TranscriptionMode.LITERAL
+    assert TranscriptionMode.from_value(None) is TranscriptionMode.LITERAL
+    assert TranscriptionMode.from_value("bogus") is TranscriptionMode.LITERAL
+
+
+def test_default_prompt_for_mode_literal_is_unchanged():
+    assert default_prompt_for_mode(TranscriptionMode.LITERAL) == DEFAULT_SYSTEM_PROMPT
+
+
+def test_default_prompt_for_mode_hypotheses_appends_block():
+    prompt = default_prompt_for_mode(TranscriptionMode.HYPOTHESES)
+    assert prompt == HYPOTHESES_SYSTEM_PROMPT
+    assert prompt.startswith(DEFAULT_SYSTEM_PROMPT)
+    assert "## HYPOTHESES" in prompt
+    assert "[[hypothesis:" in prompt
+
+
+def test_transcriber_resolves_mode_prompt_when_no_custom_prompt(tmp_path):
+    config = _config(tmp_path)
+    config.transcription_mode = TranscriptionMode.HYPOTHESES
+    transcriber = Transcriber(config, FakeProvider())
+    # Placeholders are resolved at construction, so compare against the resolved form.
+    assert transcriber.system_prompt == resolve_ocr_placeholders(
+        default_prompt_for_mode(TranscriptionMode.HYPOTHESES)
+    )
+    assert "## HYPOTHESES" in transcriber.system_prompt
+
+    config.transcription_mode = TranscriptionMode.LITERAL
+    transcriber = Transcriber(config, FakeProvider())
+    assert transcriber.system_prompt == resolve_ocr_placeholders(DEFAULT_SYSTEM_PROMPT)
+
+
+def test_transcriber_custom_prompt_wins_over_mode(tmp_path):
+    config = _config(tmp_path)
+    config.transcription_mode = TranscriptionMode.HYPOTHESES
+    transcriber = Transcriber(config, FakeProvider(), system_prompt="Custom prompt.")
+    assert transcriber.system_prompt == "Custom prompt."

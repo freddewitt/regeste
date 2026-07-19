@@ -16,6 +16,7 @@ from .project import ProjectConfig, ProviderConfig
 from .providers import ClaudeProvider, DEFAULT_BASE_URLS, GeminiProvider, OpenAICompatProvider, Provider
 from .providers.base import TranscriptionResult
 from .registry import Registry
+from .transcription_mode import HYPOTHESES_BLOCK, TranscriptionMode
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,18 @@ Réponds avec des sections markdown exactement sous cette forme, en omettant cel
 ## LANGUE
 <langue principale détectée du document>
 """
+
+# HYPOTHESES mode: same base instructions, plus the [[...]] notation legend. The
+# base prompt is untouched (LITERAL keeps today's exact behavior).
+HYPOTHESES_SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT + "\n" + HYPOTHESES_BLOCK + "\n"
+
+
+def default_prompt_for_mode(mode: TranscriptionMode) -> str:
+    """Default system prompt for a transcription mode (a custom prompt always
+    takes precedence over this - see `Transcriber.__init__`)."""
+    if mode is TranscriptionMode.HYPOTHESES:
+        return HYPOTHESES_SYSTEM_PROMPT
+    return DEFAULT_SYSTEM_PROMPT
 
 # Placeholders resolved from the current piece's metadata at OCR call time.
 # At OCR time the archival fields (cote, fonds/série…) are not yet assigned —
@@ -114,13 +127,15 @@ class Transcriber:
         self,
         config: ProjectConfig,
         provider: Provider,
-        system_prompt: str | None = DEFAULT_SYSTEM_PROMPT,
+        system_prompt: str | None = None,
     ):
         self.config = config
         self.provider = provider
-        # `None` resolves to the default here so callers (CLI/GUI) can pass
+        # `None` resolves to the mode's default here so callers (CLI/GUI) can pass
         # `config.system_prompt` directly without duplicating this fallback themselves.
-        prompt = system_prompt if system_prompt is not None else DEFAULT_SYSTEM_PROMPT
+        prompt = system_prompt if system_prompt is not None else default_prompt_for_mode(
+            config.transcription_mode
+        )
         # Per-piece archival metadata isn't known at OCR time, so placeholders
         # resolve to the "missing" marker for now (mechanism kept for later).
         self.system_prompt = resolve_ocr_placeholders(prompt)

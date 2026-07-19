@@ -12,7 +12,8 @@ again whenever a project is opened/resumed.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import QPointF, QRect, QRectF, Qt, QThread, Signal
+from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPaintEvent, QPalette, QPen
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -22,11 +23,13 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QProgressBar,
     QPushButton,
     QSpinBox,
     QTabWidget,
     QTableWidget,
     QTableWidgetItem,
+    QToolTip,
     QVBoxLayout,
     QWidget,
 )
@@ -35,8 +38,9 @@ from regeste.core.costs import Rate
 from regeste.core.imaging import DEFAULT_LIMITS, PreprocessOptions, ResizeOptions
 from regeste.core.project import ProviderConfig
 from regeste.core.providers import DEFAULT_BASE_URLS, PROVIDER_KINDS, REQUIRES_API_KEY_KINDS
+from regeste.core.registry import Registry
 from regeste.core.transcriber import DEFAULT_SYSTEM_PROMPT
-from regeste.i18n import LANGUAGE_NAMES, _
+from regeste.i18n import LANGUAGE_NAMES, _, format_cost
 
 from ..prompt_dialog import PromptEditDialog
 from ..worker import ModelFetchWorker, start_worker
@@ -46,6 +50,165 @@ from ..worker import ModelFetchWorker, start_worker
 # detection has been attempted. Not offered for claude/gemini/openai/ollama, whose
 # detection the spec considers reliable enough on its own.
 MANUAL_MODEL_KINDS = ("lm_studio", "llama_cpp")
+
+
+class CostsChartWidget(QWidget):
+    """Per-file cost bars + cumulative line, painted with QPainter.
+
+    Deliberately no charting dependency (no pyqtgraph/QtCharts): a run is ~15
+    files in practice, so a hand-rolled paintEvent is cheap and keeps the package
+    lean. Left Y axis = per-file cost (bars), right Y axis = cumulative (red line).
+    Bars go from green (cheapest file) to red (most expensive) through orange.
+    """
+
+    _MARGIN_LEFT = 64
+    _MARGIN_RIGHT = 64
+    _MARGIN_TOP = 30
+    _MARGIN_BOTTOM = 46
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._data: list[tuple[str, float]] = []
+        self._hit_rects: list[QRectF] = []
+        self.setMouseTracking(True)
+        self.setMinimumHeight(240)
+
+    def set_data(self, data: list[tuple[str, float]]) -> None:
+        self._data = data
+        self._hit_rects = []
+        self.update()
+
+    @staticmethod
+    def _bar_color(cost: float, min_cost: float, max_cost: float) -> QColor:
+        span = max_cost - min_cost
+        ratio = (cost - min_cost) / span if span > 0 else 0.5
+        # Hue 120 (green, cheapest) -> 0 (red, most expensive), through orange.
+        return QColor.fromHsv(int(120 * (1 - ratio)), 200, 200)
+
+    def paintEvent(self, event: QPaintEvent) -> None:
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        try:
+            self._hit_rects = []
+            if not self._data:
+                return
+            text_color = self.palette().color(QPalette.ColorRole.Text)
+            grid_color = QColor(text_color)
+            grid_color.setAlpha(60)
+
+            width = self.width() - self._MARGIN_LEFT - self._MARGIN_RIGHT
+            height = self.height() - self._MARGIN_TOP - self._MARGIN_BOTTOM
+            if width <= 0 or height <= 0:
+                return
+            left = self._MARGIN_LEFT
+            top = self._MARGIN_TOP
+            bottom = top + height
+            metrics = painter.fontMetrics()
+
+            costs = [cost for _, cost in self._data]
+            max_cost = max(costs) or 1.0
+            min_cost = min(costs)
+            total = sum(costs)
+
+            # Horizontal grid + left axis labels (per-file cost) + right axis
+            # labels (cumulative).
+            for i in range(5):
+                fraction = i / 4
+                y = bottom - fraction * height
+                painter.setPen(grid_color)
+                painter.drawLine(left, int(y), left + width, int(y))
+                painter.setPen(text_color)
+                left_rect = QRect(
+                    0, int(y - metrics.height() / 2), self._MARGIN_LEFT - 6, metrics.height()
+                )
+                painter.drawText(
+                    left_rect,
+                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                    f"{fraction * max_cost:.4f}",
+                )
+                right_rect = QRect(
+                    left + width + 6,
+                    int(y - metrics.height() / 2),
+                    self._MARGIN_RIGHT - 6,
+                    metrics.height(),
+                )
+                painter.drawText(
+                    right_rect,
+                    Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                    f"{fraction * total:.4f}",
+                )
+
+            count = len(self._data)
+            slot = width / count
+            bar_width = slot * 0.7
+            cumulative = 0.0
+            line_points: list[QPointF] = []
+            for index, (name, cost) in enumerate(self._data):
+                x = left + index * slot
+                bar_height = (cost / max_cost) * height
+                bar_rect = QRectF(
+                    x + (slot - bar_width) / 2, bottom - bar_height, bar_width, bar_height
+                )
+                painter.fillRect(bar_rect, self._bar_color(cost, min_cost, max_cost))
+                # Hover hit zone: the whole column, so even a zero-cost bar stays reachable.
+                self._hit_rects.append(QRectF(x, top, slot, height))
+                elided = metrics.elidedText(
+                    name, Qt.TextElideMode.ElideMiddle, max(int(slot) - 4, 8)
+                )
+                painter.setPen(text_color)
+                painter.drawText(
+                    QRectF(x, bottom + 4, slot, self._MARGIN_BOTTOM - 8),
+                    Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                    elided,
+                )
+                cumulative += cost
+                if total > 0:
+                    line_points.append(
+                        QPointF(x + slot / 2, bottom - (cumulative / total) * height)
+                    )
+
+            if line_points:
+                painter.setPen(QPen(QColor("#f85149"), 2))
+                painter.drawPolyline(line_points)
+
+            # Legend: green square = per-file cost, red line = cumulative.
+            legend_y = 6
+            painter.fillRect(
+                QRectF(left, legend_y, 10, 10), self._bar_color(min_cost, min_cost, max_cost)
+            )
+            painter.setPen(text_color)
+            per_file_label = _("Per-file cost")
+            painter.drawText(
+                QRectF(left + 14, legend_y - 2, 200, 14),
+                Qt.AlignmentFlag.AlignLeft,
+                per_file_label,
+            )
+            line_legend_x = left + 20 + metrics.horizontalAdvance(per_file_label) + 16
+            painter.setPen(QPen(QColor("#f85149"), 2))
+            painter.drawLine(
+                QPointF(line_legend_x, legend_y + 5), QPointF(line_legend_x + 12, legend_y + 5)
+            )
+            painter.setPen(text_color)
+            painter.drawText(
+                QRectF(line_legend_x + 16, legend_y - 2, 200, 14),
+                Qt.AlignmentFlag.AlignLeft,
+                _("Cumulative"),
+            )
+        finally:
+            painter.end()
+
+    def mouseMoveEvent(self, event: QMouseEvent) -> None:
+        position = event.position()
+        for (name, cost), rect in zip(self._data, self._hit_rects):
+            if rect.contains(position):
+                QToolTip.showText(
+                    event.globalPosition().toPoint(),
+                    _("{file} - cost: {cost}").format(file=name, cost=f"{cost:.4f}"),
+                    self,
+                )
+                return
+        QToolTip.hideText()
+        super().mouseMoveEvent(event)
 
 
 class SettingsPanel(QWidget):
@@ -62,11 +225,12 @@ class SettingsPanel(QWidget):
     def _build_ui(self) -> None:
         outer = QVBoxLayout(self)
 
-        sub_tabs = QTabWidget()
-        sub_tabs.addTab(self._build_ocr_tab(), _("OCR"))
-        sub_tabs.addTab(self._build_translation_tab(), _("Translation"))
-        sub_tabs.addTab(self._build_general_tab(), _("General"))
-        outer.addWidget(sub_tabs)
+        self._sub_tabs = QTabWidget()
+        self._sub_tabs.addTab(self._build_ocr_tab(), _("OCR"))
+        self._sub_tabs.addTab(self._build_translation_tab(), _("Translation"))
+        self._sub_tabs.addTab(self._build_general_tab(), _("General"))
+        self._sub_tabs.addTab(self._build_costs_tab(), _("Costs"))
+        outer.addWidget(self._sub_tabs)
 
         self.save_button = QPushButton(_("Save settings"))
         self.save_button.clicked.connect(lambda: self.settings_saved.emit())
@@ -389,6 +553,95 @@ class SettingsPanel(QWidget):
 
         layout.addStretch()
         return widget
+
+    # --- Costs sub-tab (per-file chart + spending-vs-ceiling gauge) -------------------
+
+    def _build_costs_tab(self) -> QWidget:
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+
+        self.costs_empty_label = QLabel(
+            _("No cost data available yet - run a transcription or open a project with processed files.")
+        )
+        self.costs_empty_label.setWordWrap(True)
+        layout.addWidget(self.costs_empty_label)
+
+        self.costs_chart = CostsChartWidget()
+        layout.addWidget(self.costs_chart, stretch=1)
+
+        self.spending_group = QGroupBox(_("Spending"))
+        spending_layout = QVBoxLayout(self.spending_group)
+        self.spending_label = QLabel("-")
+        spending_layout.addWidget(self.spending_label)
+        self.spending_bar = QProgressBar()
+        self.spending_bar.setRange(0, 10_000)
+        # The exact figures live in the label above; the bar is the visual ratio only.
+        self.spending_bar.setTextVisible(False)
+        spending_layout.addWidget(self.spending_bar)
+        layout.addWidget(self.spending_group)
+
+        self.set_cost_data(None)
+        return widget
+
+    def set_cost_data(self, registry: Registry | None) -> None:
+        """Rebuild the Costs tab from the registry's per-file entries.
+
+        Rebuilt from `Registry.files` (each `FileEntry` keeps its `cost`) rather
+        than from the run's transient `CostTracker`, so the tab also reflects a
+        project just opened from disk - no flying tracker state to keep alive.
+        """
+        data: list[tuple[str, float]] = []
+        ceiling: float | None = None
+        provider_kind = ""
+        if registry is not None:
+            data = [
+                (name, entry.cost)
+                for name, entry in sorted(registry.files.items())
+                if entry.status == "ok"
+            ]
+            ceiling = registry.meta.get("spend_ceiling")
+            provider = registry.meta.get("provider") or {}
+            if isinstance(provider, dict):
+                provider_kind = provider.get("kind", "")
+
+        self.costs_chart.set_data(data)
+        has_data = bool(data)
+        self.costs_empty_label.setVisible(not has_data)
+        self.costs_chart.setVisible(has_data)
+        self.spending_group.setVisible(has_data)
+        if not has_data:
+            return
+
+        self.spending_group.setTitle(
+            _("Spending ({provider})").format(provider=provider_kind)
+            if provider_kind
+            else _("Spending")
+        )
+        spent = sum(cost for _, cost in data)
+        if ceiling is None:
+            self.spending_bar.setVisible(False)
+            self.spending_label.setText(
+                _("Spent: {spent} (no ceiling)").format(spent=format_cost(spent))
+            )
+            return
+
+        self.spending_bar.setVisible(True)
+        ratio = spent / ceiling if ceiling > 0 else 1.0
+        self.spending_bar.setValue(min(int(ratio * 10_000), 10_000))
+        self.spending_label.setText(
+            _("Spent: {spent} / {ceiling} (ceiling)").format(
+                spent=format_cost(spent), ceiling=format_cost(ceiling)
+            )
+        )
+        if ratio >= 1.0:
+            chunk_color = "#f85149"  # over the ceiling: red
+        elif ratio >= 0.8:
+            chunk_color = "#d29922"  # 80%+ of the ceiling: warning
+        else:
+            chunk_color = "#0a84ff"  # matches the theme's default chunk blue
+        self.spending_bar.setStyleSheet(
+            f"QProgressBar::chunk {{ background-color: {chunk_color}; border-radius: 5px; }}"
+        )
 
     # --- Config in/out --------------------------------------------------------------
 

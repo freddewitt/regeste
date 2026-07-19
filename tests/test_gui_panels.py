@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QMessageBox
 
 from regeste.core.project import ProjectConfig, ProviderConfig
 from regeste.core.registry import Registry
+from regeste.core.transcription_mode import TranscriptionMode
 from regeste.gui.main_window import MainWindow
 from regeste.pivot import CONTENT_FIELDS, FieldValidation, Piece, load_corpus, load_piece, save_piece
 from regeste.translation import TranslationProvider, TranslationResult
@@ -64,10 +65,64 @@ def test_main_window_has_six_tabs(qtbot):
         "Transcription",
         "Review",
         "Translation",
-        "Export",
+        "Output type",
         "Settings",
         "Log",
     ]
+
+
+def test_export_panel_nested_collapsed_in_transcription_tab(qtbot):
+    """The 12-format archival exporter stays reachable from the Transcription
+    tab, hidden until "Show advanced archival export" is checked."""
+    window = MainWindow()
+    qtbot.addWidget(window)
+    assert window.export_panel.isHidden()
+    assert not window.show_archival_checkbox.isChecked()
+
+    window.show_archival_checkbox.setChecked(True)
+    assert not window.export_panel.isHidden()
+
+    window.show_archival_checkbox.setChecked(False)
+    assert window.export_panel.isHidden()
+
+
+def test_output_type_tab_drives_export_options_and_project_config(qtbot, tmp_path):
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    window.hypotheses_radio.setChecked(True)
+    window.per_file_radio.setChecked(True)
+    window.format_checkboxes["txt"].setChecked(True)
+
+    options = window._current_export_options()
+    assert options.transcription_mode is TranscriptionMode.HYPOTHESES
+    assert options.single_file is False
+    assert options.per_file is True
+    assert "txt" in options.formats
+
+    config = window._build_project_config(tmp_path)
+    assert config.transcription_mode is TranscriptionMode.HYPOTHESES
+    assert config.export.transcription_mode is TranscriptionMode.HYPOTHESES
+
+
+def test_apply_config_restores_hypotheses_mode(qtbot, tmp_path):
+    window = MainWindow()
+    qtbot.addWidget(window)
+
+    config = ProjectConfig(
+        project_name="p",
+        source_dir=tmp_path,
+        output_dir=tmp_path,
+        provider=ProviderConfig(kind="claude", model="fake-model"),
+        transcription_mode=TranscriptionMode.HYPOTHESES,
+    )
+    window._apply_config(config)
+    assert window.hypotheses_radio.isChecked()
+    assert not window.literal_radio.isChecked()
+
+    config.transcription_mode = TranscriptionMode.LITERAL
+    window._apply_config(config)
+    assert window.literal_radio.isChecked()
 
 
 def test_settings_button_removed_from_transcription_tab(qtbot):
@@ -664,6 +719,125 @@ def test_prompt_dialog_warns_when_placeholder_removed(qtbot):
     assert not dialog.warning_label.isHidden()
     dialog._on_reset()
     assert dialog.text() == "D"
+
+
+def _registry_with_costs(source_dir, costs, *, ceiling=None):
+    """A registry whose files were all processed ok, each with the given cost."""
+    from regeste.core.registry import FileEntry
+
+    config = ProjectConfig(
+        project_name="p",
+        source_dir=source_dir,
+        output_dir=source_dir,
+        provider=ProviderConfig(kind="claude", model="fake-model"),
+        spend_ceiling=ceiling,
+    )
+    names = [f"file_{i:02d}.jpg" for i in range(len(costs))]
+    registry = Registry.new(source_dir, meta=config.to_meta(), file_names=names)
+    for name, cost in zip(names, costs):
+        registry.files[name] = FileEntry(status="ok", cost=cost, model="fake-model")
+    registry.save()
+    return registry
+
+
+def test_settings_panel_has_costs_subtab(qtbot):
+    from regeste.gui.panels import SettingsPanel
+
+    panel = SettingsPanel()
+    qtbot.addWidget(panel)
+    labels = [panel._sub_tabs.tabText(i) for i in range(panel._sub_tabs.count())]
+    assert labels == ["OCR", "Translation", "General", "Costs"]
+
+
+def test_costs_tab_empty_state_without_registry(qtbot):
+    from regeste.gui.panels import SettingsPanel
+
+    panel = SettingsPanel()
+    qtbot.addWidget(panel)
+    panel.set_cost_data(None)
+    assert not panel.costs_empty_label.isHidden()
+    assert panel.costs_chart.isHidden()
+    assert panel.spending_group.isHidden()
+
+
+def test_costs_tab_populates_chart_and_gauge(qtbot, tmp_path):
+    from regeste.gui.panels import SettingsPanel
+
+    registry = _registry_with_costs(tmp_path, [0.01, 0.04, 0.02], ceiling=0.10)
+    panel = SettingsPanel()
+    qtbot.addWidget(panel)
+    panel.set_cost_data(registry)
+
+    assert panel.costs_empty_label.isHidden()
+    assert not panel.costs_chart.isHidden()
+    assert panel.costs_chart._data == [
+        ("file_00.jpg", 0.01),
+        ("file_01.jpg", 0.04),
+        ("file_02.jpg", 0.02),
+    ]
+    # 0.07 spent out of 0.10 = 70% -> below the warning threshold, default blue.
+    assert panel.spending_bar.value() == 7000
+    assert "0.07" in panel.spending_label.text()
+    assert "0.10" in panel.spending_label.text()
+    assert "#0a84ff" in panel.spending_bar.styleSheet()
+    # Chart paints without crashing (forced render offscreen).
+    assert not panel.costs_chart.grab().isNull()
+
+
+def test_costs_tab_gauge_warning_and_exceeded(qtbot, tmp_path):
+    from regeste.gui.panels import SettingsPanel
+
+    panel = SettingsPanel()
+    qtbot.addWidget(panel)
+
+    warning = _registry_with_costs(tmp_path / "w", [0.085], ceiling=0.10)
+    panel.set_cost_data(warning)
+    assert "#d29922" in panel.spending_bar.styleSheet()
+
+    exceeded = _registry_with_costs(tmp_path / "e", [0.12], ceiling=0.10)
+    panel.set_cost_data(exceeded)
+    assert "#f85149" in panel.spending_bar.styleSheet()
+    assert panel.spending_bar.value() == panel.spending_bar.maximum()
+
+
+def test_costs_tab_no_ceiling_hides_gauge(qtbot, tmp_path):
+    from regeste.gui.panels import SettingsPanel
+
+    registry = _registry_with_costs(tmp_path, [0.05], ceiling=None)
+    panel = SettingsPanel()
+    qtbot.addWidget(panel)
+    panel.set_cost_data(registry)
+
+    assert panel.spending_bar.isHidden()
+    assert "(no ceiling)" in panel.spending_label.text()
+
+
+def test_costs_tab_skips_non_ok_entries(qtbot, tmp_path):
+    from regeste.core.registry import FileEntry
+    from regeste.gui.panels import SettingsPanel
+
+    registry = _registry_with_costs(tmp_path, [0.01, 0.02], ceiling=None)
+    registry.files["file_01.jpg"] = FileEntry(status="error", error_message="boom")
+    registry.files["pending.jpg"] = FileEntry()
+
+    panel = SettingsPanel()
+    qtbot.addWidget(panel)
+    panel.set_cost_data(registry)
+    assert panel.costs_chart._data == [("file_00.jpg", 0.01)]
+
+
+def test_main_window_feeds_costs_tab_on_project_open(qtbot, tmp_path):
+    _registry_with_costs(tmp_path, [0.01, 0.04], ceiling=0.50)
+
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window.set_source_dir(tmp_path)
+
+    assert window.settings_panel.costs_chart._data == [
+        ("file_00.jpg", 0.01),
+        ("file_01.jpg", 0.04),
+    ]
+    assert not window.settings_panel.spending_group.isHidden()
 
 
 def test_settings_panel_keeps_translation_choice_when_same_checked(qtbot):

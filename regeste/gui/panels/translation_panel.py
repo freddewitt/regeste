@@ -108,13 +108,18 @@ class TranslationPanel(QWidget):
         selection_layout.addWidget(self.translate_button)
         layout.addWidget(selection_group)
 
-        prompt_group = QGroupBox(_("Translation prompt"))
-        prompt_layout = QVBoxLayout(prompt_group)
+        self.toggle_prompt_button = QPushButton(_("Show prompt"))
+        self.toggle_prompt_button.clicked.connect(self._on_toggle_prompt_clicked)
+        layout.addWidget(self.toggle_prompt_button)
+
+        self.prompt_group = QGroupBox(_("Translation prompt"))
+        prompt_layout = QVBoxLayout(self.prompt_group)
         self.prompt_edit = QPlainTextEdit()
         self.prompt_edit.setPlainText(DEFAULT_TRANSLATION_PROMPT)
         self.prompt_edit.setMinimumHeight(160)
         prompt_layout.addWidget(self.prompt_edit)
-        layout.addWidget(prompt_group)
+        self.prompt_group.setVisible(False)
+        layout.addWidget(self.prompt_group)
 
         glossary_group = QGroupBox(_("Corpus glossary"))
         glossary_layout = QVBoxLayout(glossary_group)
@@ -146,6 +151,13 @@ class TranslationPanel(QWidget):
         layout.addWidget(self.log_list)
 
     # --- Translation provider (configured in Settings) -----------------------------
+
+    def _on_toggle_prompt_clicked(self) -> None:
+        """Show/hide the translation prompt editor (hidden by default); the
+        prompt content itself is untouched, only visibility changes."""
+        visible = not self.prompt_group.isVisible()
+        self.prompt_group.setVisible(visible)
+        self.toggle_prompt_button.setText(_("Hide prompt") if visible else _("Show prompt"))
 
     def set_effective_translation_provider(self, config: ProviderConfig | None) -> None:
         """Store the resolved translation provider (same as OCR or separate),

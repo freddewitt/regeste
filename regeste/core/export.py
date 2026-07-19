@@ -10,6 +10,7 @@ from pathlib import Path
 from regeste.i18n import _, get_current_language
 
 from .registry import FileEntry, Registry
+from .transcription_mode import HYPOTHESES_BLOCK, TranscriptionMode
 
 KNOWN_FORMATS = ("md", "txt", "json", "pdf")
 
@@ -45,6 +46,9 @@ class ExportOptions:
     formats: frozenset[str]
     single_file: bool = True
     per_file: bool = True
+    # HYPOTHESES prepends the [[...]] notation legend to every written export
+    # (once at the top of a combined document, in the header of each per-file one).
+    transcription_mode: TranscriptionMode = TranscriptionMode.LITERAL
 
 
 def _successful_entries(registry: Registry) -> list[tuple[str, FileEntry]]:
@@ -54,8 +58,10 @@ def _successful_entries(registry: Registry) -> list[tuple[str, FileEntry]]:
     )
 
 
-def _render_markdown(entries: list[tuple[str, FileEntry]]) -> str:
+def _render_markdown(entries: list[tuple[str, FileEntry]], *, hypotheses: bool = False) -> str:
     blocks = []
+    if hypotheses:
+        blocks.append(HYPOTHESES_BLOCK)
     for name, entry in entries:
         block = [f"**{name}** :"]
         if entry.text:
@@ -66,8 +72,10 @@ def _render_markdown(entries: list[tuple[str, FileEntry]]) -> str:
     return "\n\n---\n\n".join(blocks) + "\n"
 
 
-def _render_text(entries: list[tuple[str, FileEntry]]) -> str:
+def _render_text(entries: list[tuple[str, FileEntry]], *, hypotheses: bool = False) -> str:
     blocks = []
+    if hypotheses:
+        blocks.append(HYPOTHESES_BLOCK)
     for name, entry in entries:
         block = [name]
         if entry.text:
@@ -78,7 +86,7 @@ def _render_text(entries: list[tuple[str, FileEntry]]) -> str:
     return "\n\n====\n\n".join(blocks) + "\n"
 
 
-def _render_json(entries: list[tuple[str, FileEntry]]) -> str:
+def _render_json(entries: list[tuple[str, FileEntry]], *, hypotheses: bool = False) -> str:
     data = [
         {
             "name": name,
@@ -93,6 +101,15 @@ def _render_json(entries: list[tuple[str, FileEntry]]) -> str:
         }
         for name, entry in entries
     ]
+    if hypotheses:
+        # Structured counterpart of the md/txt legend prepend: the notation legend
+        # rides along as a field instead of a markdown header.
+        payload = {
+            "transcription_mode": TranscriptionMode.HYPOTHESES.value,
+            "hypotheses_legend": HYPOTHESES_BLOCK,
+            "entries": data,
+        }
+        return json.dumps(payload, indent=2, ensure_ascii=False)
     return json.dumps(data, indent=2, ensure_ascii=False)
 
 
@@ -102,12 +119,16 @@ def _render_pdf(
     output_path: Path,
     *,
     image_cache: dict[str, "ImageReader"] | None = None,
+    hypotheses: bool = False,
 ) -> None:
     """PDF with a genuinely selectable text layer — native image then text below (spec §7.3).
 
     If *image_cache* is provided (a dict keyed by filename), loaded images are
     stored there on first access and reused on subsequent calls — avoids
     re-reading the same file when both combined and per-file PDFs are generated.
+
+    In HYPOTHESES mode the [[...]] notation legend is rendered on its own intro
+    page (once for a combined PDF, per document for per-file PDFs).
     """
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import cm
@@ -120,6 +141,19 @@ def _render_pdf(
     font_regular, font_bold = _text_font_for_language(get_current_language())
 
     c = canvas.Canvas(str(output_path), pagesize=A4)
+    if hypotheses:
+        y = page_height - margin
+        c.setFont(font_bold, 11)
+        for i, line in enumerate(HYPOTHESES_BLOCK.splitlines()):
+            if i == 1:  # blank line after the "## HYPOTHESES" heading -> body font
+                c.setFont(font_regular, 9)
+            if line:
+                for chunk in textwrap.wrap(line, width=max_text_width) or [""]:
+                    c.drawString(margin, y, chunk)
+                    y -= 0.45 * cm
+            else:
+                y -= 0.45 * cm
+        c.showPage()
     for name, entry in entries:
         y = page_height - margin
         image_path = source_dir / name
@@ -189,17 +223,18 @@ def export_registry(
     # Shared image cache for PDF generation: avoids re-reading the same source
     # image when both combined and per-file PDFs are requested.
     image_cache: dict[str, object] = {}
+    hypotheses = options.transcription_mode is TranscriptionMode.HYPOTHESES
 
     if options.single_file:
         combined_dir = root / "combined"
         combined_dir.mkdir(parents=True, exist_ok=True)
         for fmt in options.formats & set(_TEXT_RENDERERS):
             path = combined_dir / f"{project_name}.{fmt}"
-            path.write_text(_TEXT_RENDERERS[fmt](entries), encoding="utf-8")
+            path.write_text(_TEXT_RENDERERS[fmt](entries, hypotheses=hypotheses), encoding="utf-8")
             written_files.append(path)
         if "pdf" in options.formats:
             path = combined_dir / f"{project_name}.pdf"
-            _render_pdf(entries, source_dir, path, image_cache=image_cache)
+            _render_pdf(entries, source_dir, path, image_cache=image_cache, hypotheses=hypotheses)
             written_files.append(path)
 
     if options.per_file:
@@ -209,11 +244,15 @@ def export_registry(
             base = Path(name).stem
             for fmt in options.formats & set(_TEXT_RENDERERS):
                 path = per_file_dir / f"{base}.{fmt}"
-                path.write_text(_TEXT_RENDERERS[fmt]([(name, entry)]), encoding="utf-8")
+                path.write_text(
+                    _TEXT_RENDERERS[fmt]([(name, entry)], hypotheses=hypotheses), encoding="utf-8"
+                )
                 written_files.append(path)
             if "pdf" in options.formats:
                 path = per_file_dir / f"{base}.pdf"
-                _render_pdf([(name, entry)], source_dir, path, image_cache=image_cache)
+                _render_pdf(
+                    [(name, entry)], source_dir, path, image_cache=image_cache, hypotheses=hypotheses
+                )
                 written_files.append(path)
 
     return written_files

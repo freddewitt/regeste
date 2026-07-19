@@ -40,6 +40,7 @@ from regeste.core.imaging import IMAGE_EXTENSIONS, PreprocessOptions, ResizeOpti
 from regeste.core.project import ProjectConfig, ProviderConfig
 from regeste.core.registry import FileEntry, Registry
 from regeste.core.transcriber import DEFAULT_SYSTEM_PROMPT, ProgressState, Transcriber, create_provider
+from regeste.core.transcription_mode import TranscriptionMode
 from regeste.i18n import LANGUAGE_NAMES, _, format_cost, is_rtl, set_language
 from regeste.pivot import build_pieces_from_registry, load_corpus, load_piece as load_pivot_piece, save_piece as save_pivot_piece
 
@@ -167,6 +168,9 @@ class MainWindow(QMainWindow):
         outer_layout.addLayout(language_row)
 
         self.tabs = QTabWidget()
+        # Created before the Transcription tab: the panel now lives inside it
+        # (collapsible "Archival formats" section) instead of its own tab.
+        self.export_panel = ExportPanel()
         self.tabs.addTab(self._scrollable(self._build_transcription_tab()), _("Transcription"))
 
         self.review_panel = ReviewPanel()
@@ -175,8 +179,7 @@ class MainWindow(QMainWindow):
         self.translation_panel.translation_prompt_changed.connect(self._on_translation_prompt_changed)
         self.tabs.addTab(self._scrollable(self.translation_panel), _("Translation"))
         self._push_translation_context()
-        self.export_panel = ExportPanel()
-        self.tabs.addTab(self._scrollable(self.export_panel), _("Export"))
+        self.tabs.addTab(self._scrollable(self._build_output_type_tab()), _("Output type"))
         self.settings_panel = SettingsPanel()
         self.settings_panel.settings_saved.connect(self._on_settings_saved)
         self._settings_tab_widget = self._scrollable(self.settings_panel)
@@ -240,24 +243,6 @@ class MainWindow(QMainWindow):
         form.addLayout(output_row, row, 1)
         layout.addWidget(identity_group)
 
-        export_group = QGroupBox(_("Export"))
-        export_layout = QHBoxLayout(export_group)
-        self.combined_checkbox = QCheckBox(_("Combined (single file)"))
-        self.combined_checkbox.setChecked(True)
-        self.per_file_checkbox = QCheckBox(_("Per file"))
-        self.per_file_checkbox.setChecked(True)
-        export_layout.addWidget(self.combined_checkbox)
-        export_layout.addWidget(self.per_file_checkbox)
-        export_layout.addSpacing(24)
-        self.format_checkboxes: dict[str, QCheckBox] = {}
-        for fmt in KNOWN_FORMATS:
-            checkbox = QCheckBox(fmt)
-            checkbox.setChecked(fmt in ("md", "json"))
-            self.format_checkboxes[fmt] = checkbox
-            export_layout.addWidget(checkbox)
-        export_layout.addStretch()
-        layout.addWidget(export_group)
-
         mode_group = QGroupBox(_("Mode"))
         mode_layout = QHBoxLayout(mode_group)
         self.new_mode_radio = QRadioButton(_("New"))
@@ -312,6 +297,75 @@ class MainWindow(QMainWindow):
         self.projected_range_label = QLabel("-")
         costs_layout.addWidget(self.projected_range_label, 1, 3)
         layout.addWidget(costs_group)
+
+        # The 12-format archival exporter (EAD/DC/METS/CSV/...) moved here from the
+        # old "Export" tab - advanced usage, hidden behind an explicit checkbox so
+        # the Transcription tab stays focused on the run.
+        archival_group = QGroupBox(_("Archival formats"))
+        archival_layout = QVBoxLayout(archival_group)
+        self.show_archival_checkbox = QCheckBox(_("Show advanced archival export"))
+        self.show_archival_checkbox.setChecked(False)
+        archival_layout.addWidget(self.show_archival_checkbox)
+        self.export_panel.setVisible(False)
+        self.show_archival_checkbox.toggled.connect(self.export_panel.setVisible)
+        archival_layout.addWidget(self.export_panel)
+        layout.addWidget(archival_group)
+        layout.addStretch()
+
+        return central
+
+    def _build_output_type_tab(self) -> QWidget:
+        """OCR output choices: combined/per-file, formats, transcription mode."""
+        central = QWidget()
+        layout = QVBoxLayout(central)
+
+        output_mode_group = QGroupBox(_("Output mode"))
+        output_mode_layout = QHBoxLayout(output_mode_group)
+        self.combined_radio = QRadioButton(_("Combined (single file)"))
+        self.per_file_radio = QRadioButton(_("Per file"))
+        self.combined_radio.setChecked(True)
+        self._output_mode_group = QButtonGroup(self)
+        self._output_mode_group.addButton(self.combined_radio)
+        self._output_mode_group.addButton(self.per_file_radio)
+        output_mode_layout.addWidget(self.combined_radio)
+        output_mode_layout.addWidget(self.per_file_radio)
+        output_mode_layout.addStretch()
+        layout.addWidget(output_mode_group)
+
+        formats_group = QGroupBox(_("Formats"))
+        formats_layout = QHBoxLayout(formats_group)
+        self.format_checkboxes: dict[str, QCheckBox] = {}
+        for fmt in KNOWN_FORMATS:
+            checkbox = QCheckBox(fmt)
+            checkbox.setChecked(fmt in ("md", "json"))
+            self.format_checkboxes[fmt] = checkbox
+            formats_layout.addWidget(checkbox)
+        formats_layout.addStretch()
+        layout.addWidget(formats_group)
+
+        transcription_mode_group = QGroupBox(_("Transcription mode"))
+        transcription_mode_layout = QVBoxLayout(transcription_mode_group)
+        radios_row = QHBoxLayout()
+        self.literal_radio = QRadioButton(_("Literal"))
+        self.hypotheses_radio = QRadioButton(_("Hypotheses"))
+        self.literal_radio.setChecked(True)
+        self._transcription_mode_group = QButtonGroup(self)
+        self._transcription_mode_group.addButton(self.literal_radio)
+        self._transcription_mode_group.addButton(self.hypotheses_radio)
+        radios_row.addWidget(self.literal_radio)
+        radios_row.addWidget(self.hypotheses_radio)
+        radios_row.addStretch()
+        transcription_mode_layout.addLayout(radios_row)
+        explanation = QLabel(
+            _(
+                "Literal: raw transcription. Hypotheses: illegible or ambiguous passages "
+                "are marked with contextual [[hypotheses]], and the notation legend is "
+                "included in the exports."
+            )
+        )
+        explanation.setWordWrap(True)
+        transcription_mode_layout.addWidget(explanation)
+        layout.addWidget(transcription_mode_group)
         layout.addStretch()
 
         return central
@@ -338,6 +392,7 @@ class MainWindow(QMainWindow):
             self._apply_config(ProjectConfig.from_meta(registry.meta))
         else:
             self.new_mode_radio.setChecked(True)
+        self._push_cost_data()
         self._sync_pivot_and_notify(path)
 
     def _sync_pivot_and_notify(self, source_dir: Path) -> None:
@@ -362,10 +417,17 @@ class MainWindow(QMainWindow):
         """Pushes a restored `ProjectConfig` into every field, main screen and Settings."""
         self.project_name_edit.setText(config.project_name)
         self.output_dir_edit.setText(str(config.output_dir))
-        self.combined_checkbox.setChecked(config.export.single_file)
-        self.per_file_checkbox.setChecked(config.export.per_file)
+        # Exclusive radios: combined wins if both were set (older configs allowed both).
+        self.combined_radio.setChecked(config.export.single_file)
+        self.per_file_radio.setChecked(not config.export.single_file)
         for fmt, checkbox in self.format_checkboxes.items():
             checkbox.setChecked(fmt in config.export.formats)
+        self.hypotheses_radio.setChecked(
+            config.transcription_mode is TranscriptionMode.HYPOTHESES
+        )
+        self.literal_radio.setChecked(
+            config.transcription_mode is not TranscriptionMode.HYPOTHESES
+        )
         self._provider_config = config.provider
         self._preprocessing = config.preprocessing
         self._resize_options = config.resize
@@ -496,8 +558,9 @@ class MainWindow(QMainWindow):
             "project_name": self.project_name_edit.text(),
             "source_dir": self.source_dir_edit.text(),
             "output_dir": self.output_dir_edit.text(),
-            "combined": self.combined_checkbox.isChecked(),
-            "per_file": self.per_file_checkbox.isChecked(),
+            "combined": self.combined_radio.isChecked(),
+            "hypotheses": self.hypotheses_radio.isChecked(),
+            "show_archival": self.show_archival_checkbox.isChecked(),
             "formats": {fmt: cb.isChecked() for fmt, cb in self.format_checkboxes.items()},
             "resume_mode": self.resume_mode_radio.isChecked(),
         }
@@ -505,12 +568,18 @@ class MainWindow(QMainWindow):
 
         self._build_ui()
         self._setup_logging()
+        # The fresh Settings panel starts empty - re-feed the Costs tab from the
+        # registry (state survives the rebuild in ivars, widgets don't).
+        self._push_cost_data()
 
         self.project_name_edit.setText(state["project_name"])
         self.source_dir_edit.setText(state["source_dir"])
         self.output_dir_edit.setText(state["output_dir"])
-        self.combined_checkbox.setChecked(state["combined"])
-        self.per_file_checkbox.setChecked(state["per_file"])
+        self.combined_radio.setChecked(state["combined"])
+        self.per_file_radio.setChecked(not state["combined"])
+        self.hypotheses_radio.setChecked(state["hypotheses"])
+        self.literal_radio.setChecked(not state["hypotheses"])
+        self.show_archival_checkbox.setChecked(state["show_archival"])
         for fmt, checked in state["formats"].items():
             if fmt in self.format_checkboxes:
                 self.format_checkboxes[fmt].setChecked(checked)
@@ -526,12 +595,20 @@ class MainWindow(QMainWindow):
 
     # --- Run orchestration -----------------------------------------------------------
 
+    def _current_transcription_mode(self) -> TranscriptionMode:
+        return (
+            TranscriptionMode.HYPOTHESES
+            if self.hypotheses_radio.isChecked()
+            else TranscriptionMode.LITERAL
+        )
+
     def _current_export_options(self) -> ExportOptions:
         formats = frozenset(fmt for fmt, checkbox in self.format_checkboxes.items() if checkbox.isChecked())
         return ExportOptions(
             formats=formats,
-            single_file=self.combined_checkbox.isChecked(),
-            per_file=self.per_file_checkbox.isChecked(),
+            single_file=self.combined_radio.isChecked(),
+            per_file=self.per_file_radio.isChecked(),
+            transcription_mode=self._current_transcription_mode(),
         )
 
     def _build_project_config(self, source_dir: Path) -> ProjectConfig:
@@ -545,6 +622,7 @@ class MainWindow(QMainWindow):
             forced_language=self._forced_language,
             system_prompt=self._system_prompt,
             export=self._current_export_options(),
+            transcription_mode=self._current_transcription_mode(),
             rates=self._rates,
             spend_ceiling=self._spend_ceiling,
             workers=self._workers,
@@ -564,6 +642,11 @@ class MainWindow(QMainWindow):
         if self._translation_same_as_ocr:
             return self._provider_config
         return self._translation_provider_config
+
+    def _push_cost_data(self) -> None:
+        """Refresh the Settings > Costs tab from the registry's recorded per-file
+        costs (None-safe: the tab shows its empty state when no project is open)."""
+        self.settings_panel.set_cost_data(self._registry)
 
     def _push_translation_context(self) -> None:
         self.translation_panel.set_effective_translation_provider(
@@ -744,10 +827,14 @@ class MainWindow(QMainWindow):
     def _on_run_finished(self) -> None:
         self._finish_run()
         self._export_and_log()
+        self._push_cost_data()
         self._sync_pivot_and_notify(Path(self.source_dir_edit.text()))
 
     def _on_run_failed(self, message: str) -> None:
         self._finish_run()
+        # Partial costs are already recorded in the registry - refresh the Costs
+        # tab even on failure so they stay visible.
+        self._push_cost_data()
         logger.error(_("Run failed: {error}").format(error=message))
 
     def _finish_run(self) -> None:
