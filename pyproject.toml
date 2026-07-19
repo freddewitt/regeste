@@ -1,6 +1,6 @@
 [project]
 name = "regeste"
-version = "0.2.1"
+version = "0.2.2"
 description = "Transcription et description d'archives par vision IA"
 requires-python = ">=3.11"
 readme = "README.md"

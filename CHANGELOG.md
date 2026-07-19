@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] – 2026-07-19
+
+### Added
+- **Registry schema v2** — `files[x]` fields restructured into `source` (batch_id, physical_path, imported) and `transcription` (status, mode, text, tokens, cost) namespaces. Transparent v1→v2 migration on load. `meta.schema_version` added.
+- **Multi-batch support** — `files[x]` keys prefixed with `<batch_id>_`, `source.batch_id` identifies each import batch. `source.imported` distinguishes copied vs in-place files.
+- **Hypothesis mode indicator** — `Piece.hypothesis_mode` field derived from `transcription.mode` at pivot build time. Review tab shows "H " prefix on hypothesis pieces, with a "Hypothetical only" filter checkbox.
+- **Batch import dialog** — "Import batch…" button opens a dialog to select a source folder, enter a batch ID, and choose to copy images into `project/images/<batch_id>/` or process in place. Collision resolution auto-suffixes duplicate IDs.
+- **File menu** — menu bar with New project, Open project, Save (`Ctrl+S`), Export project (OCR + archival formats in one pass), and Quit (`Ctrl+Q`).
+- **Translation catalogs completed** — 247 translatable strings across all 9 languages (fr, en, de, es, pt, ja, zh, ar, ru). All non-English catalogs at 0 fuzzy, 0 untranslated. English identity locale fixed.
+
+### Changed
+- **Version bump to 0.2.2** — project now at v0.2.2.
+- **Output type controls** moved from their own tab into the Transcription tab (two-column layout: Mode + Output mode left, Formats + Transcription mode right).
+- **Archival formats tab** renamed to "Export archive" and promoted from collapsed section to standalone tab.
+- **GUI `_sync_new_files()`** updated to use prefixed keys matching the CLI version.
+- **`hypothesis_mode` derived** from registry `transcription.mode` in `pivot/build.py` with fallback to `meta.transcription_mode`.
+
+### Fixed
+- **English identity locale** — cleared 7 stale fuzzy entries and filled all 74 previously-empty msgstr values to match msgid (prevents `KeyError` on format strings).
+- **GUI import progress** — Qt thread affinity pitfall fixed (lambda connected to worker signal ran in wrong thread).
+- **`_rebuild_ui()`** — no longer references removed `show_archival_checkbox` widget.
+
 ## [0.2.1] – 2026-07-19
 
 ### Added
