@@ -24,9 +24,24 @@ logger = logging.getLogger(__name__)
 _VISION_FAMILIES = ("claude-3", "claude-4", "claude-opus", "claude-sonnet", "claude-haiku")
 
 
+def call_messages(client: Anthropic, *, model: str, content, max_tokens: int = 4096) -> tuple[str, int, int]:
+    """Call the Anthropic Messages API and return (raw_text, tokens_in, tokens_out).
+
+    Shared by `ClaudeProvider.transcribe` (image + text content) and
+    `translation.provider.ClaudeTranslationProvider.translate` (text-only content) —
+    both send a single-turn user message and extract the same response shape.
+    """
+    response = client.messages.create(
+        model=model,
+        max_tokens=max_tokens,
+        messages=[{"role": "user", "content": content}],
+    )
+    raw = "".join(block.text for block in response.content if block.type == "text")
+    return raw, response.usage.input_tokens, response.usage.output_tokens
+
+
 class ClaudeProvider(Provider):
     name = "claude"
-    # TODO: factoriser avec translation/provider.py ClaudeTranslationProvider — patterns communs SDK Anthropic
 
     def __init__(self, api_key: str) -> None:
         self._client = Anthropic(api_key=api_key)
@@ -61,37 +76,28 @@ class ClaudeProvider(Provider):
             model, len(image_bytes), len(full_prompt),
         )
 
-        response = self._client.messages.create(
-            model=model,
-            max_tokens=4096,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": _MEDIA_TYPES.get(media_type, "image/jpeg"),
-                                "data": base64.standard_b64encode(image_bytes).decode("ascii"),
-                            },
-                        },
-                        {"type": "text", "text": full_prompt},
-                    ],
-                }
-            ],
-        )
-        raw = "".join(block.text for block in response.content if block.type == "text")
+        content = [
+            {
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": _MEDIA_TYPES.get(media_type, "image/jpeg"),
+                    "data": base64.standard_b64encode(image_bytes).decode("ascii"),
+                },
+            },
+            {"type": "text", "text": full_prompt},
+        ]
+        raw, tokens_in, tokens_out = call_messages(self._client, model=model, content=content)
         text, description, language = parse_all(raw)
         logger.debug(
             "Claude response: tokens_in=%d, tokens_out=%d, raw_chars=%d, text_chars=%d, description_chars=%d",
-            response.usage.input_tokens, response.usage.output_tokens, len(raw), len(text), len(description),
+            tokens_in, tokens_out, len(raw), len(text), len(description),
         )
         return TranscriptionResult(
             text=text,
             description=description,
-            tokens_in=response.usage.input_tokens,
-            tokens_out=response.usage.output_tokens,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
             model=model,
             language=language,
         )

@@ -48,7 +48,6 @@ def create_translation_provider(
 
 class ClaudeTranslationProvider(TranslationProvider):
     name = "claude"
-    # TODO: factoriser avec core/providers/claude.py — construction payload, appel HTTP, extraction usage
 
     def __init__(self, api_key: str) -> None:
         from anthropic import Anthropic
@@ -60,23 +59,19 @@ class ClaudeTranslationProvider(TranslationProvider):
         return True
 
     def translate(self, prompt: str, *, model: str) -> TranslationResult:
-        response = self._client.messages.create(
-            model=model,
-            max_tokens=4096,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        text = "".join(block.text for block in response.content if block.type == "text")
+        from regeste.core.providers.claude import call_messages
+
+        text, tokens_in, tokens_out = call_messages(self._client, model=model, content=prompt)
         return TranslationResult(
             text=text.strip(),
-            tokens_in=response.usage.input_tokens,
-            tokens_out=response.usage.output_tokens,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
             model=model,
         )
 
 
 class GeminiTranslationProvider(TranslationProvider):
     name = "gemini"
-    # TODO: factoriser avec core/providers/gemini.py — construction payload, appel HTTP, extraction usage
 
     def __init__(self, api_key: str) -> None:
         from google import genai
@@ -88,19 +83,19 @@ class GeminiTranslationProvider(TranslationProvider):
         return True
 
     def translate(self, prompt: str, *, model: str) -> TranslationResult:
-        response = self._client.models.generate_content(model=model, contents=prompt)
-        usage = response.usage_metadata
+        from regeste.core.providers.gemini import call_generate_content
+
+        text, tokens_in, tokens_out = call_generate_content(self._client, model=model, contents=prompt)
         return TranslationResult(
-            text=(response.text or "").strip(),
-            tokens_in=usage.prompt_token_count if usage else 0,
-            tokens_out=usage.candidates_token_count if usage else 0,
+            text=text.strip(),
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
             model=model,
         )
 
 
 class OpenAICompatTranslationProvider(TranslationProvider):
     name = "openai_compat"
-    # TODO: factoriser avec core/providers/openai_compat.py — construction payload, appel HTTP, extraction usage
 
     def __init__(self, base_url: str, api_key: str | None = None, *, kind: str = "openai") -> None:
         if kind not in KINDS:
@@ -115,15 +110,12 @@ class OpenAICompatTranslationProvider(TranslationProvider):
         return self._kind == "openai"
 
     def translate(self, prompt: str, *, model: str) -> TranslationResult:
-        response = self._client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        text = response.choices[0].message.content or ""
-        usage = response.usage
+        from regeste.core.providers.openai_compat import call_chat_completions
+
+        text, tokens_in, tokens_out = call_chat_completions(self._client, model=model, content=prompt)
         return TranslationResult(
             text=text.strip(),
-            tokens_in=usage.prompt_tokens if usage else 0,
-            tokens_out=usage.completion_tokens if usage else 0,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
             model=model,
         )

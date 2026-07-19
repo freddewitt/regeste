@@ -56,6 +56,23 @@ _VISION_NAME_HINTS = (
 KINDS = ("openai", "lm_studio", "llama_cpp", "ollama")
 
 
+def call_chat_completions(client: OpenAI, *, model: str, content) -> tuple[str, int, int]:
+    """Call the OpenAI-compatible chat completions API and return (raw_text, tokens_in, tokens_out).
+
+    Shared by `OpenAICompatProvider.transcribe` (image + text content) and
+    `translation.provider.OpenAICompatTranslationProvider.translate` (text-only content).
+    """
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": content}],
+    )
+    raw = response.choices[0].message.content or ""
+    usage = response.usage
+    tokens_in = usage.prompt_tokens if usage else 0
+    tokens_out = usage.completion_tokens if usage else 0
+    return raw, tokens_in, tokens_out
+
+
 class OpenAICompatProvider(Provider):
     name = "openai_compat"
 
@@ -157,33 +174,21 @@ class OpenAICompatProvider(Provider):
         mime = _MEDIA_TYPES.get(media_type, "image/jpeg")
         data_url = f"data:{mime};base64,{base64.standard_b64encode(image_bytes).decode('ascii')}"
 
-        response = self._client.chat.completions.create(
-            model=model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": full_prompt},
-                        {"type": "image_url", "image_url": {"url": data_url}},
-                    ],
-                }
-            ],
-        )
-        raw = response.choices[0].message.content or ""
+        content = [
+            {"type": "text", "text": full_prompt},
+            {"type": "image_url", "image_url": {"url": data_url}},
+        ]
+        raw, tokens_in, tokens_out = call_chat_completions(self._client, model=model, content=content)
         text, description, language = parse_all(raw)
-        usage = response.usage
         logger.debug(
             "%s response: tokens_in=%d, tokens_out=%d, raw_chars=%d, text_chars=%d, description_chars=%d",
-            self._kind,
-            usage.prompt_tokens if usage else 0,
-            usage.completion_tokens if usage else 0,
-            len(raw), len(text), len(description),
+            self._kind, tokens_in, tokens_out, len(raw), len(text), len(description),
         )
         return TranscriptionResult(
             text=text,
             description=description,
-            tokens_in=usage.prompt_tokens if usage else 0,
-            tokens_out=usage.completion_tokens if usage else 0,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
             model=model,
             language=language,
         )

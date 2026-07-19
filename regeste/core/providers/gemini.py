@@ -29,6 +29,20 @@ def _is_non_vision_model(name: str) -> bool:
     return name.endswith("-text") or any(marker in lowered for marker in _NON_VISION_MARKERS)
 
 
+def call_generate_content(client: genai.Client, *, model: str, contents) -> tuple[str, int, int]:
+    """Call Gemini's generateContent and return (raw_text, tokens_in, tokens_out).
+
+    Shared by `GeminiProvider.transcribe` (image + text contents) and
+    `translation.provider.GeminiTranslationProvider.translate` (text-only contents).
+    """
+    response = client.models.generate_content(model=model, contents=contents)
+    raw = response.text or ""
+    usage = response.usage_metadata
+    tokens_in = usage.prompt_token_count if usage else 0
+    tokens_out = usage.candidates_token_count if usage else 0
+    return raw, tokens_in, tokens_out
+
+
 class GeminiProvider(Provider):
     name = "gemini"
 
@@ -70,29 +84,23 @@ class GeminiProvider(Provider):
             model, len(image_bytes), len(full_prompt),
         )
 
-        response = self._client.models.generate_content(
-            model=model,
-            contents=[
-                types.Part.from_bytes(
-                    data=image_bytes, mime_type=_MEDIA_TYPES.get(media_type, "image/jpeg")
-                ),
-                full_prompt,
-            ],
-        )
-        raw = response.text or ""
+        contents = [
+            types.Part.from_bytes(
+                data=image_bytes, mime_type=_MEDIA_TYPES.get(media_type, "image/jpeg")
+            ),
+            full_prompt,
+        ]
+        raw, tokens_in, tokens_out = call_generate_content(self._client, model=model, contents=contents)
         text, description, language = parse_all(raw)
-        usage = response.usage_metadata
         logger.debug(
             "Gemini response: tokens_in=%d, tokens_out=%d, raw_chars=%d, text_chars=%d, description_chars=%d",
-            usage.prompt_token_count if usage else 0,
-            usage.candidates_token_count if usage else 0,
-            len(raw), len(text), len(description),
+            tokens_in, tokens_out, len(raw), len(text), len(description),
         )
         return TranscriptionResult(
             text=text,
             description=description,
-            tokens_in=usage.prompt_token_count if usage else 0,
-            tokens_out=usage.candidates_token_count if usage else 0,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
             model=model,
             language=language,
         )
