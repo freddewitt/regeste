@@ -51,6 +51,7 @@ _VISION_NAME_HINTS = (
     "o4",
     "pixtral",
     "minicpm-v",
+    "ocr",
 )
 
 KINDS = ("openai", "lm_studio", "llama_cpp", "ollama")

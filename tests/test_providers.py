@@ -158,6 +158,16 @@ def test_openai_compat_provider_filters_by_name_for_lm_studio():
     assert [m.id for m in models] == ["qwen2.5-vl-7b"]
 
 
+def test_openai_compat_provider_recognizes_ocr_named_models_for_lm_studio():
+    provider = OpenAICompatProvider(base_url="http://localhost:1234/v1", kind="lm_studio")
+    provider._client = MagicMock()
+    provider._client.models.list.return_value = SimpleNamespace(
+        data=[SimpleNamespace(id="deepseek-ocr-2"), SimpleNamespace(id="llama-3.1-8b-instruct")]
+    )
+    models = provider.list_vision_models()
+    assert [m.id for m in models] == ["deepseek-ocr-2"]
+
+
 def test_openai_compat_provider_requires_api_key_only_for_openai():
     assert OpenAICompatProvider(base_url="http://x", kind="openai").requires_api_key is True
     assert OpenAICompatProvider(base_url="http://x", kind="ollama").requires_api_key is False
