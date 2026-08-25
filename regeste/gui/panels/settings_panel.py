@@ -40,7 +40,8 @@ from regeste.core.imaging import DEFAULT_LIMITS, PreprocessOptions, ResizeOption
 from regeste.core.project import ProviderConfig
 from regeste.core.providers import DEFAULT_BASE_URLS, PROVIDER_KINDS, REQUIRES_API_KEY_KINDS
 from regeste.core.registry import Registry
-from regeste.core.transcriber import DEFAULT_SYSTEM_PROMPT
+from regeste.core.transcriber import default_prompt_for_mode
+from regeste.core.transcription_mode import TranscriptionMode
 from regeste.i18n import LANGUAGE_NAMES, _, format_cost
 
 from ..prompt_dialog import PromptEditDialog
@@ -220,7 +221,11 @@ class SettingsPanel(QWidget):
         self._fetch_thread: QThread | None = None
         self._fetch_worker: ModelFetchWorker | None = None
         # OCR prompt is edited in a separate dialog (button in the OCR sub-tab).
-        self._system_prompt_value = DEFAULT_SYSTEM_PROMPT
+        # `None` means "not customized" - the effective prompt then tracks the
+        # transcription mode (literal/hypotheses) instead of being frozen on
+        # whichever default text happened to be showing when this was last set.
+        self._system_prompt_value: str | None = None
+        self._current_transcription_mode = TranscriptionMode.LITERAL
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -307,14 +312,24 @@ class SettingsPanel(QWidget):
         return group
 
     def _on_edit_ocr_prompt(self) -> None:
+        default_text = default_prompt_for_mode(self._current_transcription_mode)
         dialog = PromptEditDialog(
             self,
             title=_("OCR prompt"),
-            current_text=self._system_prompt_value,
-            default_text=DEFAULT_SYSTEM_PROMPT,
+            current_text=self._system_prompt_value if self._system_prompt_value is not None else default_text,
+            default_text=default_text,
         )
         if dialog.exec() == PromptEditDialog.DialogCode.Accepted:
-            self._system_prompt_value = dialog.text()
+            text = dialog.text()
+            # Saving back the untouched mode default un-freezes the prompt, so a
+            # later mode switch (literal <-> hypotheses) keeps tracking it again.
+            self._system_prompt_value = None if text == default_text else text
+
+    def set_transcription_mode(self, mode: TranscriptionMode) -> None:
+        """Called by the main window whenever the Literal/Hypotheses radio changes,
+        so the OCR prompt dialog offers the right default and an uncustomized
+        prompt keeps following the selected mode."""
+        self._current_transcription_mode = mode
 
     def _set_provider_kind(self, kind: str) -> None:
         self.base_url_edit.setVisible(kind in DEFAULT_BASE_URLS)
@@ -680,7 +695,8 @@ class SettingsPanel(QWidget):
         preprocessing: PreprocessOptions,
         resize: ResizeOptions,
         forced_language: str | None,
-        system_prompt: str,
+        system_prompt: str | None,
+        transcription_mode: TranscriptionMode,
         rates: dict[str, Rate],
         spend_ceiling: float | None,
         workers: int,
@@ -693,6 +709,7 @@ class SettingsPanel(QWidget):
         (the persistent-tab equivalent of the old `SettingsDialog.__init__`'s
         one-shot value seeding)."""
         self._system_prompt_value = system_prompt
+        self._current_transcription_mode = transcription_mode
 
         self.provider_combo.setCurrentText(provider_config.kind)
         self._set_provider_kind(provider_config.kind)
@@ -780,7 +797,9 @@ class SettingsPanel(QWidget):
     def get_forced_language(self) -> str | None:
         return self.forced_language_edit.text().strip() or None
 
-    def get_system_prompt(self) -> str:
+    def get_system_prompt(self) -> str | None:
+        """`None` when not customized - the caller then falls back to the
+        mode-appropriate default (see `default_prompt_for_mode`)."""
         return self._system_prompt_value
 
     def get_rates(self) -> dict[str, Rate]:

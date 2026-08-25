@@ -41,7 +41,7 @@ from regeste.core.export import ExportOptions, KNOWN_FORMATS, export_registry
 from regeste.core.imaging import IMAGE_EXTENSIONS, PreprocessOptions, ResizeOptions
 from regeste.core.project import ProjectConfig, ProviderConfig
 from regeste.core.registry import FileEntry, Registry, SourceInfo
-from regeste.core.transcriber import DEFAULT_SYSTEM_PROMPT, ProgressState, Transcriber, create_provider
+from regeste.core.transcriber import ProgressState, Transcriber, create_provider
 from regeste.core.transcription_mode import TranscriptionMode
 from regeste.i18n import LANGUAGE_NAMES, _, format_cost, is_rtl, set_language
 from regeste.pivot import build_pieces_from_registry, load_corpus, load_piece as load_pivot_piece, save_piece as save_pivot_piece
@@ -360,6 +360,7 @@ class MainWindow(QMainWindow):
         radios_row.addWidget(self.literal_radio)
         radios_row.addWidget(self.hypotheses_radio)
         radios_row.addStretch()
+        self.hypotheses_radio.toggled.connect(self._on_transcription_mode_changed)
         transcription_mode_layout.addLayout(radios_row)
         explanation = QLabel(
             _(
@@ -815,7 +816,8 @@ class MainWindow(QMainWindow):
             preprocessing=self._preprocessing,
             resize=self._resize_options,
             forced_language=self._forced_language,
-            system_prompt=self._system_prompt or DEFAULT_SYSTEM_PROMPT,
+            system_prompt=self._system_prompt,
+            transcription_mode=self._current_transcription_mode(),
             rates=self._rates,
             spend_ceiling=self._spend_ceiling,
             workers=self._workers,
@@ -966,6 +968,11 @@ class MainWindow(QMainWindow):
             if self.hypotheses_radio.isChecked()
             else TranscriptionMode.LITERAL
         )
+
+    def _on_transcription_mode_changed(self) -> None:
+        """Keep the Settings tab's OCR prompt (dialog default + fallback when
+        uncustomized) in sync with the selected mode."""
+        self.settings_panel.set_transcription_mode(self._current_transcription_mode())
 
     def _current_export_options(self) -> ExportOptions:
         formats = frozenset(fmt for fmt, checkbox in self.format_checkboxes.items() if checkbox.isChecked())

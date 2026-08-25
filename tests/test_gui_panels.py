@@ -721,6 +721,42 @@ def test_prompt_dialog_warns_when_placeholder_removed(qtbot):
     assert dialog.text() == "D"
 
 
+def test_settings_panel_ocr_prompt_follows_transcription_mode_when_uncustomized(qtbot):
+    # Regression: the "Hypotheses" radio must actually change the prompt sent to
+    # the model, not just the export legend - see the LANGUE/LANGUAGE default-prompt
+    # switch discussion. `get_system_prompt()` stays None (uncustomized) so
+    # `Transcriber` falls back to `default_prompt_for_mode(mode)`.
+    from regeste.core.transcriber import HYPOTHESES_SYSTEM_PROMPT, default_prompt_for_mode
+    from regeste.gui.panels import SettingsPanel
+
+    panel = SettingsPanel()
+    qtbot.addWidget(panel)
+    assert panel.get_system_prompt() is None
+
+    panel.set_transcription_mode(TranscriptionMode.HYPOTHESES)
+    assert panel.get_system_prompt() is None  # still uncustomized
+    assert default_prompt_for_mode(panel._current_transcription_mode) == HYPOTHESES_SYSTEM_PROMPT
+
+    panel.set_transcription_mode(TranscriptionMode.LITERAL)
+    assert panel.get_system_prompt() is None
+
+
+def test_main_window_hypotheses_mode_reaches_project_config_uncustomized(qtbot, tmp_path):
+    # End-to-end: picking "Hypotheses" without touching the OCR prompt dialog
+    # must leave `system_prompt` at None so `Transcriber` applies the
+    # hypotheses-mode default, instead of freezing the literal default forever.
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window.set_source_dir(tmp_path)
+
+    window.hypotheses_radio.setChecked(True)
+    window._sync_settings_from_panel()
+    config = window._build_project_config(tmp_path)
+
+    assert config.transcription_mode is TranscriptionMode.HYPOTHESES
+    assert config.system_prompt is None
+
+
 def _registry_with_costs(source_dir, costs, *, ceiling=None):
     """A registry whose files were all processed ok, each with the given cost."""
     from regeste.core.registry import TranscriptionInfo
@@ -859,6 +895,7 @@ def test_settings_panel_keeps_translation_choice_when_same_checked(qtbot):
         resize=ResizeOptions(),
         forced_language=None,
         system_prompt="",
+        transcription_mode=TranscriptionMode.LITERAL,
         rates={},
         spend_ceiling=None,
         workers=4,

@@ -22,6 +22,7 @@ from regeste import i18n
 from regeste.core.costs import Rate
 from regeste.core.project import ProjectConfig, ProviderConfig
 from regeste.core.providers.base import ModelInfo, Provider, TranscriptionResult
+from regeste.core.transcription_mode import TranscriptionMode
 from regeste.core.imaging import PreprocessOptions, ResizeOptions
 from regeste.core.registry import Registry
 from regeste.gui.main_window import MainWindow
@@ -41,6 +42,7 @@ def _settings_panel(
     ui_language=None,
     translation_provider=None,
     translation_same_as_ocr=True,
+    transcription_mode=TranscriptionMode.LITERAL,
 ):
     """Test helper: `SettingsPanel` builds empty and is populated via `apply_config()`
     (the persistent-tab replacement for the old `SettingsDialog(...)` constructor)."""
@@ -51,6 +53,7 @@ def _settings_panel(
         resize=resize,
         forced_language=forced_language,
         system_prompt=system_prompt,
+        transcription_mode=transcription_mode,
         rates=rates,
         spend_ceiling=spend_ceiling,
         workers=workers,
