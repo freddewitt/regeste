@@ -7,13 +7,13 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Regeste 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-19 22:55+0200\n"
+"POT-Creation-Date: 2026-08-25 12:59+0200\n"
 "PO-Revision-Date: 2026-07-11 19:39+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: de <LL@li.org>\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "Generated-By: Babel 2.18.0\n"
@@ -23,11 +23,11 @@ msgid "Invalid choice, try again."
 msgstr "Ungültige Auswahl, bitte erneut versuchen."
 
 #: regeste/cli/app.py:107 regeste/gui/import_dialog.py:53
-#: regeste/gui/main_window.py:284
+#: regeste/gui/main_window.py:286
 msgid "Source folder"
 msgstr "Quellordner"
 
-#: regeste/cli/app.py:111 regeste/gui/main_window.py:1033
+#: regeste/cli/app.py:111 regeste/gui/main_window.py:1043
 #, python-brace-format
 msgid "Not a folder: {path}"
 msgstr "Kein Ordner: {path}"
@@ -52,32 +52,32 @@ msgstr "Verfügbare Anbieter:"
 
 #: regeste/cli/app.py:148 regeste/cli/app.py:261
 #: regeste/gui/panels/review_panel.py:230
-#: regeste/gui/panels/settings_panel.py:255
-#: regeste/gui/panels/settings_panel.py:259
-#: regeste/gui/panels/settings_panel.py:492
+#: regeste/gui/panels/settings_panel.py:268
+#: regeste/gui/panels/settings_panel.py:272
+#: regeste/gui/panels/settings_panel.py:546
 msgid "Provider"
 msgstr "Anbieter"
 
 #: regeste/cli/app.py:151 regeste/cli/app.py:262
-#: regeste/gui/panels/settings_panel.py:271
-#: regeste/gui/panels/settings_panel.py:499
+#: regeste/gui/panels/settings_panel.py:284
+#: regeste/gui/panels/settings_panel.py:553
 msgid "API key"
 msgstr "API-Schlüssel"
 
 #: regeste/cli/app.py:153 regeste/cli/app.py:264
-#: regeste/gui/panels/settings_panel.py:266
-#: regeste/gui/panels/settings_panel.py:496
+#: regeste/gui/panels/settings_panel.py:279
+#: regeste/gui/panels/settings_panel.py:550
 msgid "Server URL"
 msgstr "Server-URL"
 
 #: regeste/cli/app.py:160 regeste/cli/app.py:279
-#: regeste/gui/panels/settings_panel.py:354
+#: regeste/gui/panels/settings_panel.py:377
 #, python-brace-format
 msgid "Could not reach the provider: {error}"
 msgstr "Anbieter nicht erreichbar: {error}"
 
-#: regeste/cli/app.py:166 regeste/gui/main_window.py:1082
-#: regeste/gui/panels/settings_panel.py:345
+#: regeste/cli/app.py:166 regeste/gui/main_window.py:1092
+#: regeste/gui/panels/settings_panel.py:368
 msgid "No vision model found for this provider."
 msgstr "Kein Vision-Modell für diesen Anbieter gefunden."
 
@@ -95,9 +95,9 @@ msgstr "Verfügbare Vision-Modelle:"
 
 #: regeste/cli/app.py:188 regeste/cli/app.py:289
 #: regeste/gui/panels/review_panel.py:230
-#: regeste/gui/panels/settings_panel.py:282
-#: regeste/gui/panels/settings_panel.py:431
-#: regeste/gui/panels/settings_panel.py:503
+#: regeste/gui/panels/settings_panel.py:295
+#: regeste/gui/panels/settings_panel.py:454
+#: regeste/gui/panels/settings_panel.py:557
 msgid "Model"
 msgstr "Modell"
 
@@ -163,15 +163,15 @@ msgstr "Export pro Datei schreiben?"
 msgid "Transcription modes:"
 msgstr "Transkription"
 
-#: regeste/cli/app.py:233 regeste/gui/main_window.py:352
+#: regeste/cli/app.py:233 regeste/gui/main_window.py:354
 msgid "Literal"
 msgstr "Wörtlich"
 
-#: regeste/cli/app.py:234 regeste/gui/main_window.py:353
+#: regeste/cli/app.py:234 regeste/gui/main_window.py:355
 msgid "Hypotheses"
 msgstr "Hypothesen"
 
-#: regeste/cli/app.py:235 regeste/gui/main_window.py:349
+#: regeste/cli/app.py:235 regeste/gui/main_window.py:351
 msgid "Transcription mode"
 msgstr "Transkription"
 
@@ -203,7 +203,7 @@ msgstr "Benutzerdefinierter Übersetzungs-Prompt"
 msgid "Translate the transcribed pieces now?"
 msgstr "Die transkribierten Dokumente jetzt übersetzen?"
 
-#: regeste/cli/app.py:307 regeste/gui/panels/translation_panel.py:259
+#: regeste/cli/app.py:307 regeste/gui/panels/translation_panel.py:236
 msgid "No translation model is configured."
 msgstr "Es ist kein Übersetzungsmodell konfiguriert."
 
@@ -229,7 +229,7 @@ msgstr "Übersetzt: {ok} Dokument(e), {error} Fehler."
 msgid "Export to archival formats now?"
 msgstr "Jetzt in Archivformate exportieren?"
 
-#: regeste/cli/app.py:356 regeste/gui/main_window.py:579
+#: regeste/cli/app.py:356 regeste/gui/main_window.py:582
 #: regeste/gui/panels/export_panel.py:156
 #: regeste/gui/panels/export_panel.py:180
 msgid "No pivot data found for this project yet."
@@ -244,24 +244,23 @@ msgstr "Verfügbare Archivformate: {formats}"
 msgid "Archival formats (comma-separated)"
 msgstr "Archivformate (durch Kommas getrennt)"
 
-#: regeste/cli/app.py:365 regeste/cli/app.py:385
-#: regeste/gui/main_window.py:295
+#: regeste/cli/app.py:365 regeste/cli/app.py:385 regeste/gui/main_window.py:297
 msgid "Output folder"
 msgstr "Ausgabeordner"
 
-#: regeste/cli/app.py:375 regeste/gui/main_window.py:618
-#: regeste/gui/main_window.py:620 regeste/gui/panels/export_panel.py:216
+#: regeste/cli/app.py:375 regeste/gui/main_window.py:621
+#: regeste/gui/main_window.py:623 regeste/gui/panels/export_panel.py:216
 #: regeste/gui/panels/export_panel.py:217
 #, python-brace-format
 msgid "Export failed: {error}"
 msgstr "Export fehlgeschlagen: {error}"
 
-#: regeste/cli/app.py:376 regeste/cli/app.py:596
-#: regeste/gui/main_window.py:567 regeste/gui/main_window.py:1254
+#: regeste/cli/app.py:376 regeste/cli/app.py:596 regeste/gui/main_window.py:570
+#: regeste/gui/main_window.py:1264
 msgid "Exported files:"
 msgstr "Exportierte Dateien:"
 
-#: regeste/cli/app.py:384 regeste/gui/main_window.py:279
+#: regeste/cli/app.py:384 regeste/gui/main_window.py:281
 msgid "Project name"
 msgstr "Projektname"
 
@@ -269,7 +268,7 @@ msgstr "Projektname"
 msgid "Force document language (optional)"
 msgstr "Dokumentsprache erzwingen (optional)"
 
-#: regeste/cli/app.py:400 regeste/gui/panels/settings_panel.py:471
+#: regeste/cli/app.py:400 regeste/gui/panels/settings_panel.py:494
 msgid "Number of parallel workers"
 msgstr "Anzahl paralleler Worker"
 
@@ -282,8 +281,8 @@ msgstr "Ausgabenobergrenze in $ (optional)"
 msgid "~{amount}"
 msgstr "~{amount}"
 
-#: regeste/cli/app.py:430 regeste/gui/main_window.py:412
-#: regeste/gui/main_window.py:1189
+#: regeste/cli/app.py:430 regeste/gui/main_window.py:415
+#: regeste/gui/main_window.py:1199
 msgid "not enough data yet"
 msgstr "noch nicht genügend Daten"
 
@@ -295,10 +294,9 @@ msgstr "{file} - {processed}/{total} - Kosten: {cost} - Prognose: {projected}"
 #: regeste/cli/app.py:449
 #, python-brace-format
 msgid "Done: {ok} ok, {error} error, {total} total - total cost: {cost}"
-msgstr ""
-"Fertig: {ok} ok, {error} Fehler, {total} gesamt - Gesamtkosten: {cost}"
+msgstr "Fertig: {ok} ok, {error} Fehler, {total} gesamt - Gesamtkosten: {cost}"
 
-#: regeste/cli/app.py:466 regeste/gui/main_window.py:1088
+#: regeste/cli/app.py:466 regeste/gui/main_window.py:1098
 #, python-brace-format
 msgid "Provider unavailable: {error}"
 msgstr "Anbieter nicht verfügbar: {error}"
@@ -328,12 +326,12 @@ msgstr "Abgebrochen."
 msgid "This will erase existing progress - confirm?"
 msgstr "Dadurch wird der bisherige Fortschritt gelöscht - bestätigen?"
 
-#: regeste/cli/app.py:573 regeste/gui/main_window.py:1141
+#: regeste/cli/app.py:573 regeste/gui/main_window.py:1151 tests/test_gui.py:309
 #, python-brace-format
 msgid "Files to process: {count}"
 msgstr "Zu verarbeitende Dateien: {count}"
 
-#: regeste/cli/app.py:575 regeste/gui/main_window.py:1142
+#: regeste/cli/app.py:575 regeste/gui/main_window.py:1152 tests/test_gui.py:311
 #, python-brace-format
 msgid "Rough cost estimate (heuristic, not a measurement): ~{amount}"
 msgstr "Grobe Kostenschätzung (heuristisch, keine Messung): ~{amount}"
@@ -346,7 +344,7 @@ msgstr "Jetzt starten?"
 msgid "Run cancelled."
 msgstr "Durchlauf abgebrochen."
 
-#: regeste/cli/app.py:587 regeste/gui/main_window.py:1097
+#: regeste/cli/app.py:587 regeste/gui/main_window.py:1107 tests/test_gui.py:334
 msgid "Nothing to process."
 msgstr "Nichts zu verarbeiten."
 
@@ -361,13 +359,13 @@ msgid "Description"
 msgstr "Beschreibung"
 
 #: regeste/gui/import_dialog.py:45 regeste/gui/import_dialog.py:102
-#: regeste/gui/main_window.py:648 regeste/gui/main_window.py:658
-#: regeste/gui/main_window.py:701
+#: regeste/gui/main_window.py:651 regeste/gui/main_window.py:661
+#: regeste/gui/main_window.py:704
 msgid "Import batch"
 msgstr "Stapel importieren"
 
-#: regeste/gui/import_dialog.py:56 regeste/gui/main_window.py:287
-#: regeste/gui/main_window.py:297 regeste/gui/panels/export_panel.py:79
+#: regeste/gui/import_dialog.py:56 regeste/gui/main_window.py:289
+#: regeste/gui/main_window.py:299 regeste/gui/panels/export_panel.py:79
 msgid "Browse..."
 msgstr "Durchsuchen..."
 
@@ -394,8 +392,8 @@ msgstr "Quellordner auswählen"
 #: regeste/gui/import_dialog.py:103
 #, python-brace-format
 msgid ""
-"The identifier \"{requested}\" already exists. Batch imported as "
-"\"{resolved}\"."
+"The identifier \"{requested}\" already exists. Batch imported as \"{resolved}"
+"\"."
 msgstr ""
 "Die Kennung \"{requested}\" existiert bereits. Stapel importiert als "
 "\"{resolved}\"."
@@ -410,7 +408,7 @@ msgstr "Import: {count} Nicht-Bild-Datei(en) in {folder} ignoriert"
 msgid "Import: {file} already exists, copy skipped"
 msgstr "Import: {file} existiert bereits, Kopie übersprungen"
 
-#: regeste/gui/main_window.py:90 regeste/gui/main_window.py:1148
+#: regeste/gui/main_window.py:90 regeste/gui/main_window.py:1158
 msgid "Confirm"
 msgstr "Bestätigen"
 
@@ -430,13 +428,13 @@ msgstr "Regeste"
 msgid "Language"
 msgstr "Sprache"
 
-#: regeste/gui/main_window.py:184 regeste/gui/panels/settings_panel.py:545
+#: regeste/gui/main_window.py:184 regeste/gui/panels/settings_panel.py:607
 msgid "Automatic (system language)"
 msgstr "Automatisch (Systemsprache)"
 
-#: regeste/gui/main_window.py:195 regeste/gui/main_window.py:634
+#: regeste/gui/main_window.py:195 regeste/gui/main_window.py:637
 #: regeste/gui/panels/review_panel.py:82
-#: regeste/gui/panels/settings_panel.py:418
+#: regeste/gui/panels/settings_panel.py:441
 msgid "Transcription"
 msgstr "Transkription"
 
@@ -444,90 +442,90 @@ msgstr "Transkription"
 msgid "Review"
 msgstr "Prüfung"
 
-#: regeste/gui/main_window.py:201 regeste/gui/panels/settings_panel.py:230
-#: regeste/gui/panels/translation_panel.py:127
-#: regeste/gui/panels/translation_panel.py:254
+#: regeste/gui/main_window.py:205 regeste/gui/panels/settings_panel.py:243
+#: regeste/gui/panels/translation_panel.py:114
+#: regeste/gui/panels/translation_panel.py:231
 msgid "Translation"
 msgstr "Übersetzung"
 
-#: regeste/gui/main_window.py:203 regeste/gui/main_window.py:636
+#: regeste/gui/main_window.py:207 regeste/gui/main_window.py:639
 msgid "Export archive"
 msgstr "Archivexport"
 
-#: regeste/gui/main_window.py:207
+#: regeste/gui/main_window.py:209 tests/test_i18n.py:82
 msgid "Settings"
 msgstr "Einstellungen"
 
-#: regeste/gui/main_window.py:210 regeste/gui/panels/export_panel.py:119
-#: regeste/gui/panels/translation_panel.py:149
+#: regeste/gui/main_window.py:212 regeste/gui/panels/export_panel.py:119
+#: regeste/gui/panels/translation_panel.py:136
 msgid "Log"
 msgstr "Protokoll"
 
-#: regeste/gui/main_window.py:229
+#: regeste/gui/main_window.py:231
 msgid "File"
 msgstr "Datei"
 
-#: regeste/gui/main_window.py:231
+#: regeste/gui/main_window.py:233
 msgid "New project…"
 msgstr "Neues Projekt…"
 
-#: regeste/gui/main_window.py:234
+#: regeste/gui/main_window.py:236
 msgid "Open project…"
 msgstr "Projekt öffnen…"
 
-#: regeste/gui/main_window.py:237
+#: regeste/gui/main_window.py:239
 msgid "Import batch..."
 msgstr "Stapel importieren…"
 
-#: regeste/gui/main_window.py:240
+#: regeste/gui/main_window.py:242
 msgid "Export project archive..."
 msgstr "Projektarchiv exportieren…"
 
-#: regeste/gui/main_window.py:245 regeste/gui/panels/review_panel.py:222
+#: regeste/gui/main_window.py:247 regeste/gui/panels/review_panel.py:222
 msgid "Save"
 msgstr "Speichern"
 
-#: regeste/gui/main_window.py:251
+#: regeste/gui/main_window.py:253
 msgid "Export project…"
 msgstr "Projekt exportieren…"
 
-#: regeste/gui/main_window.py:256
+#: regeste/gui/main_window.py:258
 msgid "Quit Regeste"
 msgstr "Regeste beenden"
 
-#: regeste/gui/main_window.py:275
+#: regeste/gui/main_window.py:277
 msgid "Project"
 msgstr "Projekt"
 
-#: regeste/gui/main_window.py:309
+#: regeste/gui/main_window.py:311
 msgid "Mode"
 msgstr "Modus"
 
-#: regeste/gui/main_window.py:311
+#: regeste/gui/main_window.py:313
 msgid "New"
 msgstr "Neu"
 
-#: regeste/gui/main_window.py:312
+#: regeste/gui/main_window.py:314
 msgid "Resume"
 msgstr "Fortsetzen"
 
-#: regeste/gui/main_window.py:322
+#: regeste/gui/main_window.py:324
 msgid "Output mode"
 msgstr "Ausgabeordner"
 
-#: regeste/gui/main_window.py:324
+#: regeste/gui/main_window.py:326
 msgid "Combined (single file)"
 msgstr "Kombiniert (einzelne Datei)"
 
-#: regeste/gui/main_window.py:325
+#: regeste/gui/main_window.py:327
 msgid "Per file"
 msgstr "Pro Datei"
 
-#: regeste/gui/main_window.py:338 regeste/gui/panels/export_panel.py:85
+#: regeste/gui/main_window.py:340 regeste/gui/panels/export_panel.py:85
 msgid "Formats"
 msgstr "Formate"
 
-#: regeste/gui/main_window.py:364
+#: regeste/gui/main_window.py:367
 msgid ""
 "Literal: raw transcription. Hypotheses: illegible or ambiguous passages are "
 "marked with contextual [[hypotheses]], and the notation legend is included "
@@ -537,115 +535,115 @@ msgstr ""
 "Passagen werden mit kontextuellen [[Hypothesen]] markiert, und die Legende "
 "wird in den Exporten mitgeliefert."
 
-#: regeste/gui/main_window.py:378
+#: regeste/gui/main_window.py:381 tests/test_gui.py:665
 msgid "Launch"
 msgstr "Starten"
 
-#: regeste/gui/main_window.py:381
+#: regeste/gui/main_window.py:384
 msgid "Stop"
 msgstr "Stopp"
 
-#: regeste/gui/main_window.py:403 regeste/gui/panels/settings_panel.py:232
-#: regeste/gui/panels/settings_panel.py:426
+#: regeste/gui/main_window.py:406 regeste/gui/panels/settings_panel.py:245
+#: regeste/gui/panels/settings_panel.py:449
 msgid "Costs"
 msgstr "Kosten"
 
-#: regeste/gui/main_window.py:405
+#: regeste/gui/main_window.py:408
 msgid "Current file"
 msgstr "Aktuelle Datei"
 
-#: regeste/gui/main_window.py:408
+#: regeste/gui/main_window.py:411
 msgid "Total"
 msgstr "Gesamt"
 
-#: regeste/gui/main_window.py:411
+#: regeste/gui/main_window.py:414
 msgid "Projected"
 msgstr "Prognose"
 
-#: regeste/gui/main_window.py:414
+#: regeste/gui/main_window.py:417
 msgid "Range (min/max per file)"
 msgstr "Bereich (Min./Max. pro Datei)"
 
-#: regeste/gui/main_window.py:428
+#: regeste/gui/main_window.py:431
 msgid "Select the source folder"
 msgstr "Quellordner auswählen"
 
-#: regeste/gui/main_window.py:433
+#: regeste/gui/main_window.py:436
 msgid "Select the output folder"
 msgstr "Ausgabeordner auswählen"
 
-#: regeste/gui/main_window.py:475
+#: regeste/gui/main_window.py:478
 msgid "New project"
 msgstr "Neues Projekt"
 
-#: regeste/gui/main_window.py:476 regeste/gui/main_window.py:507
+#: regeste/gui/main_window.py:479 regeste/gui/main_window.py:510
 msgid ""
 "Please wait for the current operation to finish before changing project."
 msgstr ""
 "Bitte warten Sie, bis der aktuelle Vorgang abgeschlossen ist, bevor Sie das "
 "Projekt wechseln."
 
-#: regeste/gui/main_window.py:479 regeste/gui/main_window.py:510
+#: regeste/gui/main_window.py:482 regeste/gui/main_window.py:513
 msgid "Select the project folder"
 msgstr "Projektordner auswählen"
 
-#: regeste/gui/main_window.py:499
+#: regeste/gui/main_window.py:502
 #, python-brace-format
 msgid "New project created in {path}"
 msgstr "Neues Projekt erstellt in {path}"
 
-#: regeste/gui/main_window.py:506
+#: regeste/gui/main_window.py:509
 msgid "Open project"
 msgstr "Projekt öffnen"
 
-#: regeste/gui/main_window.py:517 regeste/gui/main_window.py:620
-#: regeste/gui/main_window.py:715 regeste/gui/main_window.py:767
-#: regeste/gui/main_window.py:1029 regeste/gui/main_window.py:1033
-#: regeste/gui/main_window.py:1042 regeste/gui/main_window.py:1082
-#: regeste/gui/main_window.py:1088 regeste/gui/panels/review_panel.py:370
+#: regeste/gui/main_window.py:520 regeste/gui/main_window.py:623
+#: regeste/gui/main_window.py:718 regeste/gui/main_window.py:770
+#: regeste/gui/main_window.py:1039 regeste/gui/main_window.py:1043
+#: regeste/gui/main_window.py:1052 regeste/gui/main_window.py:1092
+#: regeste/gui/main_window.py:1098 regeste/gui/panels/review_panel.py:370
 #: regeste/gui/panels/review_panel.py:415
-#: regeste/gui/panels/translation_panel.py:297
+#: regeste/gui/panels/translation_panel.py:275
 msgid "Error"
 msgstr "Fehler"
 
-#: regeste/gui/main_window.py:517 regeste/gui/main_window.py:1042
+#: regeste/gui/main_window.py:520 regeste/gui/main_window.py:1052
 msgid "No existing project found in this folder to resume."
 msgstr ""
 "In diesem Ordner wurde kein bestehendes Projekt zum Fortsetzen gefunden."
 
-#: regeste/gui/main_window.py:528
+#: regeste/gui/main_window.py:531
 #, python-brace-format
 msgid "Project loaded from {path}"
 msgstr "Projekt geladen aus {path}"
 
-#: regeste/gui/main_window.py:536
+#: regeste/gui/main_window.py:539
 msgid "Project saved."
 msgstr "Projekt gespeichert."
 
-#: regeste/gui/main_window.py:543 regeste/gui/main_window.py:549
-#: regeste/gui/main_window.py:639 regeste/gui/panels/export_panel.py:107
+#: regeste/gui/main_window.py:546 regeste/gui/main_window.py:552
+#: regeste/gui/main_window.py:642 regeste/gui/panels/export_panel.py:107
 #: regeste/gui/panels/export_panel.py:151
 #: regeste/gui/panels/export_panel.py:156
 #: regeste/gui/panels/export_panel.py:180
 msgid "Export"
 msgstr "Export"
 
-#: regeste/gui/main_window.py:543
+#: regeste/gui/main_window.py:546
 msgid "Open a project folder before exporting."
 msgstr "Öffnen Sie einen Projektordner, bevor Sie exportieren."
 
-#: regeste/gui/main_window.py:550
+#: regeste/gui/main_window.py:553
 msgid "Please wait for the current operation to finish before exporting."
 msgstr ""
 "Bitte warten Sie, bis der aktuelle Vorgang abgeschlossen ist, bevor Sie "
 "exportieren."
 
-#: regeste/gui/main_window.py:613 regeste/gui/panels/export_panel.py:208
+#: regeste/gui/main_window.py:616 regeste/gui/panels/export_panel.py:208
 #: regeste/gui/panels/export_panel.py:209
 msgid "Export complete."
 msgstr "Export abgeschlossen."
 
-#: regeste/gui/main_window.py:640
+#: regeste/gui/main_window.py:643
 #, python-brace-format
 msgid ""
 "Export complete. Files written:\n"
@@ -654,75 +652,75 @@ msgstr ""
 "Export abgeschlossen. Geschriebene Dateien:\n"
 "{files}"
 
-#: regeste/gui/main_window.py:648
+#: regeste/gui/main_window.py:651
 msgid "Open a project folder before importing a batch."
 msgstr "Öffnen Sie einen Projektordner, bevor Sie einen Stapel importieren."
 
-#: regeste/gui/main_window.py:658
+#: regeste/gui/main_window.py:661
 msgid "No image files found in this folder."
 msgstr ""
 "In diesem Ordner wurde kein bestehendes Projekt zum Fortsetzen gefunden."
 
-#: regeste/gui/main_window.py:663
+#: regeste/gui/main_window.py:666
 #, python-brace-format
 msgid "Import: {count} image(s) from {folder} as batch \"{batch_id}\""
 msgstr "Import: {count} Bild(er) aus {folder} als Stapel \"{batch_id}\""
 
-#: regeste/gui/main_window.py:695
+#: regeste/gui/main_window.py:698
 #, python-brace-format
 msgid "Import complete: {count} new file(s) in batch \"{batch_id}\"."
 msgstr "Import abgeschlossen: {count} neue Datei(en) im Stapel \"{batch_id}\"."
 
-#: regeste/gui/main_window.py:702
+#: regeste/gui/main_window.py:705
 #, python-brace-format
 msgid "{count} new file(s) imported as batch \"{batch_id}\"."
 msgstr "{count} neue Datei(en) als Stapel \"{batch_id}\" importiert."
 
-#: regeste/gui/main_window.py:713 regeste/gui/main_window.py:715
+#: regeste/gui/main_window.py:716 regeste/gui/main_window.py:718
 #, python-brace-format
 msgid "Import failed: {error}"
 msgstr "Export fehlgeschlagen: {error}"
 
-#: regeste/gui/main_window.py:731 regeste/gui/main_window.py:736
-#: regeste/gui/main_window.py:759
+#: regeste/gui/main_window.py:734 regeste/gui/main_window.py:739
+#: regeste/gui/main_window.py:762
 msgid "Export project archive"
 msgstr "Projektarchiv exportieren"
 
-#: regeste/gui/main_window.py:731
+#: regeste/gui/main_window.py:734
 msgid "Open a project folder before exporting an archive."
 msgstr "Öffnen Sie einen Projektordner, bevor Sie ein Archiv exportieren."
 
-#: regeste/gui/main_window.py:756 regeste/gui/main_window.py:760
+#: regeste/gui/main_window.py:759 regeste/gui/main_window.py:763
 #, python-brace-format
 msgid "Project archive written to {path}"
 msgstr "Projektarchiv geschrieben nach {path}"
 
-#: regeste/gui/main_window.py:765 regeste/gui/main_window.py:767
+#: regeste/gui/main_window.py:768 regeste/gui/main_window.py:770
 #, python-brace-format
 msgid "Project archive export failed: {error}"
 msgstr "Export des Projektarchivs fehlgeschlagen: {error}"
 
-#: regeste/gui/main_window.py:898 regeste/gui/panels/settings_panel.py:541
+#: regeste/gui/main_window.py:903 regeste/gui/panels/settings_panel.py:603
 msgid "Interface language"
 msgstr "Oberflächensprache"
 
-#: regeste/gui/main_window.py:899
+#: regeste/gui/main_window.py:904
 msgid ""
 "Please wait for the current operation to finish before switching language."
 msgstr ""
 "Bitte warten Sie, bis der aktuelle Vorgang abgeschlossen ist, bevor Sie die "
 "Sprache wechseln."
 
-#: regeste/gui/main_window.py:1029
+#: regeste/gui/main_window.py:1039
 msgid "Choose a source folder first."
 msgstr "Wählen Sie zuerst einen Quellordner aus."
 
-#: regeste/gui/main_window.py:1111
+#: regeste/gui/main_window.py:1121
 #, python-brace-format
 msgid "Starting: {count} file(s), provider={provider}, model={model}"
 msgstr "Start: {count} Datei(en), Anbieter={provider}, Modell={model}"
 
-#: regeste/gui/main_window.py:1161
+#: regeste/gui/main_window.py:1171
 #, python-brace-format
 msgid ""
 "{file} - done (model={model}, tokens_in={tin}, tokens_out={tout}, "
@@ -731,17 +729,17 @@ msgstr ""
 "{file} - fertig (Modell={model}, tokens_in={tin}, tokens_out={tout}, "
 "Kosten={cost})"
 
-#: regeste/gui/main_window.py:1203
+#: regeste/gui/main_window.py:1213
 #, python-brace-format
 msgid "Run failed: {error}"
 msgstr "Durchlauf fehlgeschlagen: {error}"
 
-#: regeste/gui/main_window.py:1230
+#: regeste/gui/main_window.py:1240
 #, python-brace-format
 msgid "{done} / {total} - processing: {current}"
 msgstr "{done} / {total} - in Bearbeitung: {current}"
 
-#: regeste/gui/main_window.py:1240
+#: regeste/gui/main_window.py:1250
 #, python-brace-format
 msgid "{file} - starting"
 msgstr "{file} - Start"
@@ -937,7 +935,7 @@ msgid "View image"
 msgstr "Bild anzeigen"
 
 #: regeste/gui/panels/review_panel.py:194
-#: regeste/gui/panels/settings_panel.py:469
+#: regeste/gui/panels/settings_panel.py:492
 msgid "Advanced"
 msgstr "Erweitert"
 
@@ -980,141 +978,160 @@ msgstr "Kein Bild"
 msgid "Rejection note (required)"
 msgstr "Ablehnungsnotiz (erforderlich)"
 
-#: regeste/gui/panels/settings_panel.py:180
+#: regeste/gui/panels/settings_panel.py:181
 msgid "Per-file cost"
 msgstr "Pro Datei"
 
-#: regeste/gui/panels/settings_panel.py:195
+#: regeste/gui/panels/settings_panel.py:196
 msgid "Cumulative"
 msgstr "Kumulativ"
 
-#: regeste/gui/panels/settings_panel.py:206
+#: regeste/gui/panels/settings_panel.py:207
 #, python-brace-format
 msgid "{file} - cost: {cost}"
-msgstr "{file} - Start"
+msgstr "{file} - Kosten: {cost}"
 
-#: regeste/gui/panels/settings_panel.py:229
+#: regeste/gui/panels/settings_panel.py:242
 msgid "OCR"
 msgstr "OCR"
 
-#: regeste/gui/panels/settings_panel.py:231
+#: regeste/gui/panels/settings_panel.py:244
 msgid "General"
 msgstr "Allgemein"
 
-#: regeste/gui/panels/settings_panel.py:235
+#: regeste/gui/panels/settings_panel.py:248
 msgid "Save settings"
 msgstr "Einstellungen speichern"
 
-#: regeste/gui/panels/settings_panel.py:277
+#: regeste/gui/panels/settings_panel.py:290
 msgid "Fetch models"
 msgstr "Modelle abrufen"
 
-#: regeste/gui/panels/settings_panel.py:290
+#: regeste/gui/panels/settings_panel.py:303
 msgid "Force this model identifier (if not auto-detected)"
 msgstr "Diese Modellkennung erzwingen (falls nicht automatisch erkannt)"
 
-#: regeste/gui/panels/settings_panel.py:298
+#: regeste/gui/panels/settings_panel.py:311
 msgid "Edit OCR prompt..."
 msgstr "OCR-Prompt bearbeiten..."
 
-#: regeste/gui/panels/settings_panel.py:311
+#: regeste/gui/panels/settings_panel.py:325
 msgid "OCR prompt"
 msgstr "OCR-Prompt"
 
-#: regeste/gui/panels/settings_panel.py:333
+#: regeste/gui/panels/settings_panel.py:356
 msgid "Fetching models..."
 msgstr "Modelle werden abgerufen..."
 
-#: regeste/gui/panels/settings_panel.py:357
+#: regeste/gui/panels/settings_panel.py:380
 msgid "Provider size limits (informative)"
 msgstr "Größenbeschränkungen des Anbieters (informativ)"
 
-#: regeste/gui/panels/settings_panel.py:363
+#: regeste/gui/panels/settings_panel.py:386
 #, python-brace-format
 msgid "max {px}px / {mb:.0f} MB"
 msgstr "max. {px}px / {mb:.0f} MB"
 
-#: regeste/gui/panels/settings_panel.py:371
+#: regeste/gui/panels/settings_panel.py:394
 msgid "Resizing"
 msgstr "Größenanpassung"
 
-#: regeste/gui/panels/settings_panel.py:373
+#: regeste/gui/panels/settings_panel.py:396
 msgid "Disable adaptive resizing"
 msgstr "Adaptive Größenanpassung deaktivieren"
 
-#: regeste/gui/panels/settings_panel.py:377
+#: regeste/gui/panels/settings_panel.py:400
 msgid "Override maximum pixel dimension"
 msgstr "Maximale Pixelgröße überschreiben"
 
-#: regeste/gui/panels/settings_panel.py:387
+#: regeste/gui/panels/settings_panel.py:410
 msgid "Override maximum file size (bytes)"
 msgstr "Maximale Dateigröße überschreiben (Bytes)"
 
-#: regeste/gui/panels/settings_panel.py:398
+#: regeste/gui/panels/settings_panel.py:421
 msgid "Preprocessing chain"
 msgstr "Vorverarbeitungskette"
 
-#: regeste/gui/panels/settings_panel.py:400
+#: regeste/gui/panels/settings_panel.py:423
 msgid "Deskew"
 msgstr "Entzerrung (Deskew)"
 
-#: regeste/gui/panels/settings_panel.py:401
+#: regeste/gui/panels/settings_panel.py:424
 msgid "Denoise"
 msgstr "Rauschunterdrückung"
 
-#: regeste/gui/panels/settings_panel.py:402
+#: regeste/gui/panels/settings_panel.py:425
 msgid "Contrast enhancement"
 msgstr "Kontrastverbesserung"
 
-#: regeste/gui/panels/settings_panel.py:403
+#: regeste/gui/panels/settings_panel.py:426
 msgid "Upscale"
 msgstr "Hochskalierung"
 
-#: regeste/gui/panels/settings_panel.py:404
+#: regeste/gui/panels/settings_panel.py:427
 msgid "Quality upscaling (Real-ESRGAN if available)"
 msgstr "Qualitätsbasierte Hochskalierung (Real-ESRGAN, falls verfügbar)"
 
-#: regeste/gui/panels/settings_panel.py:420
+#: regeste/gui/panels/settings_panel.py:443
 msgid "Force document language (optional, auto if empty)"
 msgstr "Dokumentsprache erzwingen (optional, automatisch wenn leer)"
 
-#: regeste/gui/panels/settings_panel.py:431
+#: regeste/gui/panels/settings_panel.py:454
 msgid "Input $/M tokens"
 msgstr "Eingabe $/Mio. Token"
 
-#: regeste/gui/panels/settings_panel.py:431
+#: regeste/gui/panels/settings_panel.py:454
 msgid "Output $/M tokens"
 msgstr "Ausgabe $/Mio. Token"
 
-#: regeste/gui/panels/settings_panel.py:436
-#: regeste/gui/panels/translation_panel.py:130
+#: regeste/gui/panels/settings_panel.py:459
+#: regeste/gui/panels/translation_panel.py:117
 msgid "Add row"
 msgstr "Zeile hinzufügen"
 
-#: regeste/gui/panels/settings_panel.py:438
-#: regeste/gui/panels/translation_panel.py:132
+#: regeste/gui/panels/settings_panel.py:461
+#: regeste/gui/panels/translation_panel.py:119
 msgid "Remove selected row"
 msgstr "Ausgewählte Zeile entfernen"
 
-#: regeste/gui/panels/settings_panel.py:445
+#: regeste/gui/panels/settings_panel.py:468
 msgid "Enable spend ceiling"
 msgstr "Ausgabenobergrenze aktivieren"
 
-#: regeste/gui/panels/settings_panel.py:487
+#: regeste/gui/panels/settings_panel.py:511
+#: regeste/gui/panels/settings_panel.py:525
+msgid "Translation prompt"
+msgstr "Übersetzungs-Prompt"
+
+#: regeste/gui/panels/settings_panel.py:514
+msgid "Edit translation prompt..."
+msgstr "Übersetzungs-Prompt bearbeiten..."
+
+#: regeste/gui/panels/settings_panel.py:532
+#: regeste/gui/panels/translation_panel.py:217
+#, python-brace-format
+msgid ""
+"Removing {entites_a_preserver} or {glossaire} disables the injection of "
+"named entities and the glossary into the prompt."
+msgstr ""
+"Das Entfernen von {entites_a_preserver} oder {glossaire} deaktiviert das "
+"Einfügen benannter Entitäten und des Glossars in den Prompt."
+
+#: regeste/gui/panels/settings_panel.py:541
 msgid "Translation model"
 msgstr "Übersetzungsmodell"
 
-#: regeste/gui/panels/settings_panel.py:489
+#: regeste/gui/panels/settings_panel.py:543
 msgid "Use the same model for translation"
 msgstr "Dasselbe Modell für die Übersetzung verwenden"
 
-#: regeste/gui/panels/settings_panel.py:549
+#: regeste/gui/panels/settings_panel.py:611
 msgid "Applies immediately when you click Save settings - no restart needed."
 msgstr ""
 "Wird sofort angewendet, wenn Sie auf Einstellungen speichern klicken - kein "
 "Neustart erforderlich."
 
-#: regeste/gui/panels/settings_panel.py:564
+#: regeste/gui/panels/settings_panel.py:626
 msgid ""
 "No cost data available yet - run a transcription or open a project with "
 "processed files."
@@ -1122,22 +1139,22 @@ msgstr ""
 "Noch keine Kostendaten verfügbar — führen Sie eine Transkription durch oder "
 "öffnen Sie ein Projekt mit verarbeiteten Dateien."
 
-#: regeste/gui/panels/settings_panel.py:572
-#: regeste/gui/panels/settings_panel.py:618
+#: regeste/gui/panels/settings_panel.py:634
+#: regeste/gui/panels/settings_panel.py:680
 msgid "Spending"
 msgstr "Ausgaben"
 
-#: regeste/gui/panels/settings_panel.py:616
+#: regeste/gui/panels/settings_panel.py:678
 #, python-brace-format
 msgid "Spending ({provider})"
 msgstr "Ausgaben ({provider})"
 
-#: regeste/gui/panels/settings_panel.py:624
+#: regeste/gui/panels/settings_panel.py:686
 #, python-brace-format
 msgid "Spent: {spent} (no ceiling)"
 msgstr "Ausgegeben: {spent} (keine Obergrenze)"
 
-#: regeste/gui/panels/settings_panel.py:632
+#: regeste/gui/panels/settings_panel.py:694
 #, python-brace-format
 msgid "Spent: {spent} / {ceiling} (ceiling)"
 msgstr "Ausgegeben: {spent} / {ceiling} (Obergrenze)"
@@ -1159,64 +1176,42 @@ msgid "Launch translation"
 msgstr "Übersetzung starten"
 
 #: regeste/gui/panels/translation_panel.py:111
-#: regeste/gui/panels/translation_panel.py:160
-msgid "Show prompt"
-msgstr "OCR-Prompt"
-
-#: regeste/gui/panels/translation_panel.py:115
-msgid "Translation prompt"
-msgstr "Übersetzungs-Prompt"
-
-#: regeste/gui/panels/translation_panel.py:124
 msgid "Corpus glossary"
 msgstr "Korpus-Glossar"
 
-#: regeste/gui/panels/translation_panel.py:127
+#: regeste/gui/panels/translation_panel.py:114
 msgid "Term"
 msgstr "Begriff"
 
-#: regeste/gui/panels/translation_panel.py:134
+#: regeste/gui/panels/translation_panel.py:121
 msgid "Save glossary"
 msgstr "Glossar speichern"
 
-#: regeste/gui/panels/translation_panel.py:160
-msgid "Hide prompt"
-msgstr "OCR-Prompt"
-
-#: regeste/gui/panels/translation_panel.py:222
+#: regeste/gui/panels/translation_panel.py:194
 msgid "Glossary"
 msgstr "Glossar"
 
-#: regeste/gui/panels/translation_panel.py:222
+#: regeste/gui/panels/translation_panel.py:194
 msgid "Glossary saved."
 msgstr "Glossar gespeichert."
 
-#: regeste/gui/panels/translation_panel.py:240
+#: regeste/gui/panels/translation_panel.py:215
 msgid "Warning"
 msgstr "Warnung"
 
-#: regeste/gui/panels/translation_panel.py:242
-#, python-brace-format
-msgid ""
-"Removing {entites_a_preserver} or {glossaire} disables the injection of "
-"named entities and the glossary into the prompt."
-msgstr ""
-"Das Entfernen von {entites_a_preserver} oder {glossaire} deaktiviert das "
-"Einfügen benannter Entitäten und des Glossars in den Prompt."
-
-#: regeste/gui/panels/translation_panel.py:246
+#: regeste/gui/panels/translation_panel.py:221
 msgid "Continue anyway?"
 msgstr "Trotzdem fortfahren?"
 
-#: regeste/gui/panels/translation_panel.py:254
+#: regeste/gui/panels/translation_panel.py:231
 msgid "No piece matches the selected scope."
 msgstr "Kein Dokument entspricht dem gewählten Bereich."
 
-#: regeste/gui/panels/translation_panel.py:259
+#: regeste/gui/panels/translation_panel.py:236
 msgid "Translation failed"
 msgstr "Übersetzung fehlgeschlagen"
 
-#: regeste/gui/panels/translation_panel.py:300
+#: regeste/gui/panels/translation_panel.py:278
 #, python-brace-format
 msgid "Translation complete: {ok} succeeded, {failed} failed."
 msgstr "Übersetzung abgeschlossen: {ok} erfolgreich, {failed} fehlgeschlagen."
@@ -1233,19 +1228,25 @@ msgstr "Die OCR-Konfidenz ist unbekannt."
 msgid "OCR confidence is low."
 msgstr "Die OCR-Konfidenz ist niedrig."
 
-#~ msgid ""
-#~ "The interface language has been saved ({language}). Restart Regeste for the "
-#~ "change to fully apply everywhere."
-#~ msgstr ""
-#~ "Die Oberflächensprache wurde gespeichert ({language}). Starten Sie Regeste "
-#~ "neu, damit die Änderung überall vollständig wirksam wird."
+#~ msgid "Show prompt"
+#~ msgstr "OCR-Prompt"
+
+#~ msgid "Hide prompt"
+#~ msgstr "OCR-Prompt"
 
 #~ msgid ""
-#~ "Restarting the application is required for the new language to fully apply "
-#~ "everywhere."
+#~ "The interface language has been saved ({language}). Restart Regeste for "
+#~ "the change to fully apply everywhere."
 #~ msgstr ""
-#~ "Ein Neustart der Anwendung ist erforderlich, damit die neue Sprache überall "
-#~ "vollständig wirksam wird."
+#~ "Die Oberflächensprache wurde gespeichert ({language}). Starten Sie "
+#~ "Regeste neu, damit die Änderung überall vollständig wirksam wird."
+
+#~ msgid ""
+#~ "Restarting the application is required for the new language to fully "
+#~ "apply everywhere."
+#~ msgstr ""
+#~ "Ein Neustart der Anwendung ist erforderlich, damit die neue Sprache "
+#~ "überall vollständig wirksam wird."
 
 #~ msgid "Respond in the following language: {lang}"
 #~ msgstr "Antworten Sie in der folgenden Sprache: {lang}"
@@ -1285,9 +1286,6 @@ msgstr "Die OCR-Konfidenz ist niedrig."
 
 #~ msgid "auto-detected"
 #~ msgstr "automatisch erkannt"
-
-#~ msgid "Edit translation prompt..."
-#~ msgstr "Übersetzungs-Prompt bearbeiten..."
 
 #~ msgid "Target language (e.g. en, de, fr)"
 #~ msgstr "Zielsprache (z. B. en, de, fr)"

@@ -23,7 +23,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QPlainTextEdit,
     QProgressBar,
     QPushButton,
     QSpinBox,
@@ -213,6 +212,11 @@ class CostsChartWidget(QWidget):
         super().mouseMoveEvent(event)
 
 
+# Prompt placeholders the translation prompt dialog warns about if the user
+# strips them - same pair `translation_panel.py` already guards at launch time.
+_GUARDED_TRANSLATION_PLACEHOLDERS = ("{entites_a_preserver}", "{glossaire}")
+
+
 class SettingsPanel(QWidget):
     settings_saved = Signal()
 
@@ -226,6 +230,9 @@ class SettingsPanel(QWidget):
         # whichever default text happened to be showing when this was last set.
         self._system_prompt_value: str | None = None
         self._current_transcription_mode = TranscriptionMode.LITERAL
+        # Translation prompt, edited in the same kind of dialog (button in the
+        # Translation sub-tab). `None` means "not customized" (default).
+        self._translation_prompt_value: str | None = None
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -501,17 +508,34 @@ class SettingsPanel(QWidget):
         return widget
 
     def _build_translation_prompt_group(self) -> QGroupBox:
-        from regeste.translation import DEFAULT_TRANSLATION_PROMPT
-
         group = QGroupBox(_("Translation prompt"))
         layout = QVBoxLayout(group)
 
-        self.translation_prompt_edit = QPlainTextEdit()
-        self.translation_prompt_edit.setPlainText(DEFAULT_TRANSLATION_PROMPT)
-        self.translation_prompt_edit.setMinimumHeight(160)
-        layout.addWidget(self.translation_prompt_edit)
+        self.edit_translation_prompt_button = QPushButton(_("Edit translation prompt..."))
+        self.edit_translation_prompt_button.clicked.connect(self._on_edit_translation_prompt)
+        layout.addWidget(self.edit_translation_prompt_button)
 
         return group
+
+    def _on_edit_translation_prompt(self) -> None:
+        from regeste.translation import DEFAULT_TRANSLATION_PROMPT
+
+        dialog = PromptEditDialog(
+            self,
+            title=_("Translation prompt"),
+            current_text=self._translation_prompt_value
+            if self._translation_prompt_value is not None
+            else DEFAULT_TRANSLATION_PROMPT,
+            default_text=DEFAULT_TRANSLATION_PROMPT,
+            warn_placeholders=list(_GUARDED_TRANSLATION_PLACEHOLDERS),
+            warning_message=_(
+                "Removing {entites_a_preserver} or {glossaire} disables the injection "
+                "of named entities and the glossary into the prompt."
+            ),
+        )
+        if dialog.exec() == PromptEditDialog.DialogCode.Accepted:
+            text = dialog.text()
+            self._translation_prompt_value = None if text == DEFAULT_TRANSLATION_PROMPT else text
 
     def _build_translation_provider_group(self) -> QGroupBox:
         group = QGroupBox(_("Translation model"))
@@ -564,16 +588,11 @@ class SettingsPanel(QWidget):
 
     def get_translation_prompt(self) -> str | None:
         """Return saved translation prompt or None for default."""
-        from regeste.translation import DEFAULT_TRANSLATION_PROMPT
-
-        text = self.translation_prompt_edit.toPlainText()
-        return None if text == DEFAULT_TRANSLATION_PROMPT else text
+        return self._translation_prompt_value
 
     def set_translation_prompt(self, prompt: str | None) -> None:
         """Restore saved translation prompt (None = use default)."""
-        from regeste.translation import DEFAULT_TRANSLATION_PROMPT
-
-        self.translation_prompt_edit.setPlainText(prompt if prompt is not None else DEFAULT_TRANSLATION_PROMPT)
+        self._translation_prompt_value = prompt
 
     # --- General sub-tab ---------------------------------------------------------------
 
