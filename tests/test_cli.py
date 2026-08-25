@@ -37,7 +37,13 @@ class FakeProvider(Provider):
     def list_vision_models(self):
         return self._models
 
-    def transcribe(self, image_bytes, *, model, prompt, forced_language=None):
+    def _build_content(self, image_bytes, prompt, media_type):
+        return None
+
+    def _call_api(self, model, content):
+        return "", 0, 0
+
+    def transcribe(self, image_bytes, *, model, prompt, forced_language=None, media_type="jpeg"):
         self.calls += 1
         response = self._responses.pop(0)
         if isinstance(response, Exception):

@@ -185,12 +185,20 @@ def test_settings_panel_changes_applied_at_launch_even_without_tab_switch(qtbot,
     from regeste.core.providers.base import Provider, TranscriptionResult
 
     class _FakeProvider(Provider):
-        requires_api_key = False
+        @property
+        def requires_api_key(self):
+            return False
 
         def list_vision_models(self):
             return []
 
-        def transcribe(self, image_bytes, *, model, prompt, forced_language=None):
+        def _build_content(self, image_bytes, prompt, media_type):
+            return None
+
+        def _call_api(self, model, content):
+            return "", 0, 0
+
+        def transcribe(self, image_bytes, *, model, prompt, forced_language=None, media_type="jpeg"):
             return TranscriptionResult(text="x", description="", tokens_in=1, tokens_out=1, model=model)
 
     monkeypatch.setattr("regeste.gui.main_window.create_provider", lambda cfg: _FakeProvider())

@@ -156,39 +156,22 @@ class OpenAICompatProvider(Provider):
         logger.debug("Ollama: %d vision-capable model(s)", len(result))
         return result
 
-    def transcribe(
-        self,
-        image_bytes: bytes,
-        *,
-        model: str,
-        prompt: str,
-        forced_language: str | None = None,
-        media_type: str = "jpeg",
-    ) -> TranscriptionResult:
-        full_prompt = augment_prompt(prompt, forced_language)
+    def _build_content(self, image_bytes: bytes, prompt: str, media_type: str):
         logger.debug(
-            "%s transcribe: model=%s, base_url=%s, image_bytes=%d, prompt_chars=%d",
-            self._kind, model, self._base_url, len(image_bytes), len(full_prompt),
+            "%s transcribe: base_url=%s, image_bytes=%d, prompt_chars=%d",
+            self._kind, self._base_url, len(image_bytes), len(prompt),
         )
-
         mime = _MEDIA_TYPES.get(media_type, "image/jpeg")
         data_url = f"data:{mime};base64,{base64.standard_b64encode(image_bytes).decode('ascii')}"
-
-        content = [
-            {"type": "text", "text": full_prompt},
+        return [
+            {"type": "text", "text": prompt},
             {"type": "image_url", "image_url": {"url": data_url}},
         ]
+
+    def _call_api(self, model: str, content) -> tuple[str, int, int]:
         raw, tokens_in, tokens_out = call_chat_completions(self._client, model=model, content=content)
-        text, description, language = parse_all(raw)
         logger.debug(
-            "%s response: tokens_in=%d, tokens_out=%d, raw_chars=%d, text_chars=%d, description_chars=%d",
-            self._kind, tokens_in, tokens_out, len(raw), len(text), len(description),
+            "%s response: tokens_in=%d, tokens_out=%d, raw_chars=%d",
+            self._kind, tokens_in, tokens_out, len(raw),
         )
-        return TranscriptionResult(
-            text=text,
-            description=description,
-            tokens_in=tokens_in,
-            tokens_out=tokens_out,
-            model=model,
-            language=language,
-        )
+        return raw, tokens_in, tokens_out

@@ -61,22 +61,12 @@ class ClaudeProvider(Provider):
         logger.debug("Claude: %d model(s) returned, %d vision-capable", len(models.data), len(result))
         return result
 
-    def transcribe(
-        self,
-        image_bytes: bytes,
-        *,
-        model: str,
-        prompt: str,
-        forced_language: str | None = None,
-        media_type: str = "jpeg",
-    ) -> TranscriptionResult:
-        full_prompt = augment_prompt(prompt, forced_language)
+    def _build_content(self, image_bytes: bytes, prompt: str, media_type: str):
         logger.debug(
-            "Claude transcribe: model=%s, image_bytes=%d, prompt_chars=%d",
-            model, len(image_bytes), len(full_prompt),
+            "Claude transcribe: image_bytes=%d, prompt_chars=%d",
+            len(image_bytes), len(prompt),
         )
-
-        content = [
+        return [
             {
                 "type": "image",
                 "source": {
@@ -85,19 +75,14 @@ class ClaudeProvider(Provider):
                     "data": base64.standard_b64encode(image_bytes).decode("ascii"),
                 },
             },
-            {"type": "text", "text": full_prompt},
+            {"type": "text", "text": prompt},
         ]
+
+    def _call_api(self, model: str, content) -> tuple[str, int, int]:
+        logger.debug("Claude calling API: model=%s", model)
         raw, tokens_in, tokens_out = call_messages(self._client, model=model, content=content)
-        text, description, language = parse_all(raw)
         logger.debug(
-            "Claude response: tokens_in=%d, tokens_out=%d, raw_chars=%d, text_chars=%d, description_chars=%d",
-            tokens_in, tokens_out, len(raw), len(text), len(description),
+            "Claude response: tokens_in=%d, tokens_out=%d, raw_chars=%d",
+            tokens_in, tokens_out, len(raw),
         )
-        return TranscriptionResult(
-            text=text,
-            description=description,
-            tokens_in=tokens_in,
-            tokens_out=tokens_out,
-            model=model,
-            language=language,
-        )
+        return raw, tokens_in, tokens_out

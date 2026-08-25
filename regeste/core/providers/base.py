@@ -21,6 +21,7 @@ def augment_prompt(prompt: str, forced_language: str | None = None) -> str:
         return prompt
     return prompt + "\n\n" + "Respond in the following language: {lang}".format(lang=forced_language)
 
+
 _SECTION_RE = re.compile(
     r"##\s*(TEXT|DESCRIPTION|LANGUE)\s*\n(.*?)(?=\n##\s*(?:TEXT|DESCRIPTION|LANGUE)\s*\n|\Z)",
     re.IGNORECASE | re.DOTALL,
@@ -104,7 +105,6 @@ class Provider(ABC):
         the "critical blind spot": some backends expose no capability metadata at all).
         """
 
-    @abstractmethod
     def transcribe(
         self,
         image_bytes: bytes,
@@ -112,12 +112,38 @@ class Provider(ABC):
         model: str,
         prompt: str,
         forced_language: str | None = None,
+        media_type: str = "jpeg",
     ) -> TranscriptionResult:
         """Send an already-resized image and return text + description.
 
-        The model must respond with tagged sections (`## TEXT` / `## DESCRIPTION`)
-        that the implementation is responsible for parsing.
+        Template method: builds content payload, calls backend API, parses result.
+        Subclasses override _build_content() and _call_api() only.
         """
+        full_prompt = augment_prompt(prompt, forced_language)
+        content = self._build_content(image_bytes, full_prompt, media_type)
+        raw, tokens_in, tokens_out = self._call_api(model, content)
+        text, description, language = parse_all(raw)
+        return TranscriptionResult(
+            text=text,
+            description=description,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
+            model=model,
+            language=language,
+        )
+
+    @abstractmethod
+    def _build_content(self, image_bytes: bytes, prompt: str, media_type: str):
+        """Build provider-specific content payload for API call.
+
+        Claude: dict with image source + text.
+        Gemini: list of Part + text string.
+        OpenAI-compat: list with text + image_url.
+        """
+
+    @abstractmethod
+    def _call_api(self, model: str, content) -> tuple[str, int, int]:
+        """Call the backend API and return (raw_text, tokens_in, tokens_out)."""
 
     @property
     @abstractmethod
