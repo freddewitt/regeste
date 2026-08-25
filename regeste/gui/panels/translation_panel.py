@@ -42,7 +42,6 @@ from regeste.i18n import LANGUAGE_NAMES, _
 from regeste.pivot import Piece, global_status, load_corpus
 from regeste.translation import (
     ClaudeTranslationProvider,
-    DEFAULT_TRANSLATION_PROMPT,
     GeminiTranslationProvider,
     OpenAICompatTranslationProvider,
     TranslationProvider,
@@ -72,8 +71,9 @@ class TranslationPanel(QWidget):
     # main window can persist it into the project registry.
     translation_prompt_changed = Signal(object)
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, settings_panel=None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.settings_panel = settings_panel
         self._source_dir: Path | None = None
         self._pieces: list[Piece] = []
         self._glossary: dict[str, str] = {}
@@ -108,19 +108,6 @@ class TranslationPanel(QWidget):
         selection_layout.addWidget(self.translate_button)
         layout.addWidget(selection_group)
 
-        self.toggle_prompt_button = QPushButton(_("Show prompt"))
-        self.toggle_prompt_button.clicked.connect(self._on_toggle_prompt_clicked)
-        layout.addWidget(self.toggle_prompt_button)
-
-        self.prompt_group = QGroupBox(_("Translation prompt"))
-        prompt_layout = QVBoxLayout(self.prompt_group)
-        self.prompt_edit = QPlainTextEdit()
-        self.prompt_edit.setPlainText(DEFAULT_TRANSLATION_PROMPT)
-        self.prompt_edit.setMinimumHeight(160)
-        prompt_layout.addWidget(self.prompt_edit)
-        self.prompt_group.setVisible(False)
-        layout.addWidget(self.prompt_group)
-
         glossary_group = QGroupBox(_("Corpus glossary"))
         glossary_layout = QVBoxLayout(glossary_group)
         self.glossary_table = QTableWidget(0, 2)
@@ -152,25 +139,10 @@ class TranslationPanel(QWidget):
 
     # --- Translation provider (configured in Settings) -----------------------------
 
-    def _on_toggle_prompt_clicked(self) -> None:
-        """Show/hide the translation prompt editor (hidden by default); the
-        prompt content itself is untouched, only visibility changes."""
-        visible = not self.prompt_group.isVisible()
-        self.prompt_group.setVisible(visible)
-        self.toggle_prompt_button.setText(_("Hide prompt") if visible else _("Show prompt"))
-
     def set_effective_translation_provider(self, config: ProviderConfig | None) -> None:
         """Store the resolved translation provider (same as OCR or separate),
         pushed by the main window; used when the user launches a batch."""
         self._translation_provider = config
-
-    def set_translation_prompt(self, prompt: str | None) -> None:
-        """Restore the saved translation prompt (None = use the default)."""
-        self.prompt_edit.setPlainText(prompt if prompt is not None else DEFAULT_TRANSLATION_PROMPT)
-
-    def _current_prompt(self) -> str | None:
-        text = self.prompt_edit.toPlainText()
-        return None if text == DEFAULT_TRANSLATION_PROMPT else text
 
     # --- Project synchronisation --------------------------------------------------
 
@@ -232,7 +204,10 @@ class TranslationPanel(QWidget):
         if self._source_dir is None:
             return
 
-        prompt_text = self.prompt_edit.toPlainText()
+        from regeste.translation import DEFAULT_TRANSLATION_PROMPT
+
+        prompt = self.settings_panel.get_translation_prompt() if self.settings_panel else None
+        prompt_text = prompt if prompt is not None else DEFAULT_TRANSLATION_PROMPT
         removed = [p for p in _GUARDED_PLACEHOLDERS if p not in prompt_text]
         if removed:
             answer = QMessageBox.question(
@@ -247,7 +222,9 @@ class TranslationPanel(QWidget):
             )
             if answer != QMessageBox.StandardButton.Yes:
                 return
-        self.translation_prompt_changed.emit(self._current_prompt())
+        if self.settings_panel:
+            prompt = self.settings_panel.get_translation_prompt()
+            self.translation_prompt_changed.emit(prompt)
 
         pieces = self._scoped_pieces()
         if not pieces:
@@ -270,6 +247,7 @@ class TranslationPanel(QWidget):
         self.progress_bar.setValue(0)
         self.progress_label.setText(f"0 / {len(pieces)}")
 
+        prompt = self.settings_panel.get_translation_prompt() if self.settings_panel else None
         self._worker = TranslationBatchWorker(
             self._source_dir,
             pieces,
@@ -277,7 +255,7 @@ class TranslationPanel(QWidget):
             provider,
             config.model.strip(),
             glossary=glossary,
-            template=self._current_prompt(),
+            template=prompt,
             enforce_guard=enforce_guard,
         )
         self._thread = start_worker(self._worker)

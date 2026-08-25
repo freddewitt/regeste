@@ -7,16 +7,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Regeste 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-19 22:02+0200\n"
+"POT-Creation-Date: 2026-07-19 22:55+0200\n"
 "PO-Revision-Date: 2026-07-11 19:39+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: ru\n"
 "Language-Team: ru <LL@li.org>\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
-"n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+"Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 "Generated-By: Babel 2.18.0\n"
 
 #: regeste/cli/app.py:102
@@ -24,11 +23,11 @@ msgid "Invalid choice, try again."
 msgstr "Неверный выбор, попробуйте снова."
 
 #: regeste/cli/app.py:107 regeste/gui/import_dialog.py:53
-#: regeste/gui/main_window.py:279
+#: regeste/gui/main_window.py:284
 msgid "Source folder"
 msgstr "Исходная папка"
 
-#: regeste/cli/app.py:111 regeste/gui/main_window.py:971
+#: regeste/cli/app.py:111 regeste/gui/main_window.py:1033
 #, python-brace-format
 msgid "Not a folder: {path}"
 msgstr "Это не папка: {path}"
@@ -77,14 +76,16 @@ msgstr "URL сервера"
 msgid "Could not reach the provider: {error}"
 msgstr "Не удалось подключиться к провайдеру: {error}"
 
-#: regeste/cli/app.py:166 regeste/gui/main_window.py:1020
+#: regeste/cli/app.py:166 regeste/gui/main_window.py:1082
 #: regeste/gui/panels/settings_panel.py:345
 msgid "No vision model found for this provider."
-msgstr "У этого провайдера не найдено ни одной модели для работы с изображениями."
+msgstr ""
+"У этого провайдера не найдено ни одной модели для работы с изображениями."
 
 #: regeste/cli/app.py:169 regeste/cli/app.py:183 regeste/cli/app.py:286
 msgid "Manually enter a model identifier (if not auto-detected)?"
-msgstr "Ввести идентификатор модели вручную (если не определён автоматически)?"
+msgstr ""
+"Ввести идентификатор модели вручную (если не определён автоматически)?"
 
 #: regeste/cli/app.py:172 regeste/cli/app.py:186 regeste/cli/app.py:290
 msgid "Model identifier"
@@ -165,15 +166,15 @@ msgstr "Создать экспорт отдельно по файлам?"
 msgid "Transcription modes:"
 msgstr "Транскрипция"
 
-#: regeste/cli/app.py:233 regeste/gui/main_window.py:347
+#: regeste/cli/app.py:233 regeste/gui/main_window.py:352
 msgid "Literal"
 msgstr "Буквально"
 
-#: regeste/cli/app.py:234 regeste/gui/main_window.py:348
+#: regeste/cli/app.py:234 regeste/gui/main_window.py:353
 msgid "Hypotheses"
 msgstr "Гипотезы"
 
-#: regeste/cli/app.py:235 regeste/gui/main_window.py:344
+#: regeste/cli/app.py:235 regeste/gui/main_window.py:349
 msgid "Transcription mode"
 msgstr "Транскрипция"
 
@@ -231,7 +232,7 @@ msgstr "Переведено: {ok}, ошибок: {error}."
 msgid "Export to archival formats now?"
 msgstr "Экспортировать в архивные форматы сейчас?"
 
-#: regeste/cli/app.py:356 regeste/gui/main_window.py:574
+#: regeste/cli/app.py:356 regeste/gui/main_window.py:579
 #: regeste/gui/panels/export_panel.py:156
 #: regeste/gui/panels/export_panel.py:180
 msgid "No pivot data found for this project yet."
@@ -246,23 +247,24 @@ msgstr "Доступные архивные форматы: {formats}"
 msgid "Archival formats (comma-separated)"
 msgstr "Архивные форматы (через запятую)"
 
-#: regeste/cli/app.py:365 regeste/cli/app.py:385 regeste/gui/main_window.py:290
+#: regeste/cli/app.py:365 regeste/cli/app.py:385
+#: regeste/gui/main_window.py:295
 msgid "Output folder"
 msgstr "Папка вывода"
 
-#: regeste/cli/app.py:375 regeste/gui/main_window.py:613
-#: regeste/gui/main_window.py:615 regeste/gui/panels/export_panel.py:216
+#: regeste/cli/app.py:375 regeste/gui/main_window.py:618
+#: regeste/gui/main_window.py:620 regeste/gui/panels/export_panel.py:216
 #: regeste/gui/panels/export_panel.py:217
 #, python-brace-format
 msgid "Export failed: {error}"
 msgstr "Ошибка экспорта: {error}"
 
-#: regeste/cli/app.py:376 regeste/cli/app.py:596 regeste/gui/main_window.py:562
-#: regeste/gui/main_window.py:1192
+#: regeste/cli/app.py:376 regeste/cli/app.py:596
+#: regeste/gui/main_window.py:567 regeste/gui/main_window.py:1254
 msgid "Exported files:"
 msgstr "Экспортированные файлы:"
 
-#: regeste/cli/app.py:384 regeste/gui/main_window.py:274
+#: regeste/cli/app.py:384 regeste/gui/main_window.py:279
 msgid "Project name"
 msgstr "Название проекта"
 
@@ -283,8 +285,8 @@ msgstr "Лимит расходов в $ (необязательно)"
 msgid "~{amount}"
 msgstr "~{amount}"
 
-#: regeste/cli/app.py:430 regeste/gui/main_window.py:407
-#: regeste/gui/main_window.py:1127
+#: regeste/cli/app.py:430 regeste/gui/main_window.py:412
+#: regeste/gui/main_window.py:1189
 msgid "not enough data yet"
 msgstr "пока недостаточно данных"
 
@@ -300,7 +302,7 @@ msgstr ""
 "Готово: {ok} успешно, {error} с ошибками, всего {total} — общие расходы: "
 "{cost}"
 
-#: regeste/cli/app.py:466 regeste/gui/main_window.py:1026
+#: regeste/cli/app.py:466 regeste/gui/main_window.py:1088
 #, python-brace-format
 msgid "Provider unavailable: {error}"
 msgstr "Провайдер недоступен: {error}"
@@ -330,17 +332,16 @@ msgstr "Отменено."
 msgid "This will erase existing progress - confirm?"
 msgstr "Это приведёт к удалению текущего прогресса — подтвердить?"
 
-#: regeste/cli/app.py:573 regeste/gui/main_window.py:1079
+#: regeste/cli/app.py:573 regeste/gui/main_window.py:1141
 #, python-brace-format
 msgid "Files to process: {count}"
 msgstr "Файлов к обработке: {count}"
 
-#: regeste/cli/app.py:575 regeste/gui/main_window.py:1080
+#: regeste/cli/app.py:575 regeste/gui/main_window.py:1142
 #, python-brace-format
 msgid "Rough cost estimate (heuristic, not a measurement): ~{amount}"
 msgstr ""
-"Приблизительная оценка расходов (эвристика, не точное измерение): "
-"~{amount}"
+"Приблизительная оценка расходов (эвристика, не точное измерение): ~{amount}"
 
 #: regeste/cli/app.py:579
 msgid "Start now?"
@@ -350,7 +351,7 @@ msgstr "Начать сейчас?"
 msgid "Run cancelled."
 msgstr "Выполнение отменено."
 
-#: regeste/cli/app.py:587 regeste/gui/main_window.py:1035
+#: regeste/cli/app.py:587 regeste/gui/main_window.py:1097
 msgid "Nothing to process."
 msgstr "Нечего обрабатывать."
 
@@ -365,13 +366,13 @@ msgid "Description"
 msgstr "Описание"
 
 #: regeste/gui/import_dialog.py:45 regeste/gui/import_dialog.py:102
-#: regeste/gui/main_window.py:638 regeste/gui/main_window.py:648
-#: regeste/gui/main_window.py:691
+#: regeste/gui/main_window.py:648 regeste/gui/main_window.py:658
+#: regeste/gui/main_window.py:701
 msgid "Import batch"
 msgstr "Импорт пачки"
 
-#: regeste/gui/import_dialog.py:56 regeste/gui/main_window.py:282
-#: regeste/gui/main_window.py:292 regeste/gui/panels/export_panel.py:79
+#: regeste/gui/import_dialog.py:56 regeste/gui/main_window.py:287
+#: regeste/gui/main_window.py:297 regeste/gui/panels/export_panel.py:79
 msgid "Browse..."
 msgstr "Обзор..."
 
@@ -414,14 +415,14 @@ msgstr "Импорт: пропущено {count} не-изображение(й)
 msgid "Import: {file} already exists, copy skipped"
 msgstr "Импорт: {file} уже существует, копирование пропущено"
 
-#: regeste/gui/main_window.py:90 regeste/gui/main_window.py:1086
+#: regeste/gui/main_window.py:90 regeste/gui/main_window.py:1148
 msgid "Confirm"
 msgstr "Подтверждение"
 
 #: regeste/gui/main_window.py:91
 msgid ""
-"A project already exists in this folder - starting a new one will erase "
-"its progress. Continue?"
+"A project already exists in this folder - starting a new one will erase its "
+"progress. Continue?"
 msgstr ""
 "В этой папке уже есть проект — создание нового приведёт к удалению его "
 "прогресса. Продолжить?"
@@ -430,215 +431,221 @@ msgstr ""
 msgid "Regeste"
 msgstr "Regeste"
 
-#: regeste/gui/main_window.py:180
+#: regeste/gui/main_window.py:182
 msgid "Language"
 msgstr "Язык"
 
-#: regeste/gui/main_window.py:182 regeste/gui/panels/settings_panel.py:545
+#: regeste/gui/main_window.py:184 regeste/gui/panels/settings_panel.py:545
 msgid "Automatic (system language)"
 msgstr "Автоматически (язык системы)"
 
-#: regeste/gui/main_window.py:193 regeste/gui/panels/review_panel.py:82
+#: regeste/gui/main_window.py:195 regeste/gui/main_window.py:634
+#: regeste/gui/panels/review_panel.py:82
 #: regeste/gui/panels/settings_panel.py:418
 msgid "Transcription"
 msgstr "Транскрипция"
 
-#: regeste/gui/main_window.py:196
+#: regeste/gui/main_window.py:198
 msgid "Review"
 msgstr "Проверка"
 
-#: regeste/gui/main_window.py:199 regeste/gui/panels/settings_panel.py:230
+#: regeste/gui/main_window.py:201 regeste/gui/panels/settings_panel.py:230
 #: regeste/gui/panels/translation_panel.py:127
 #: regeste/gui/panels/translation_panel.py:254
 msgid "Translation"
 msgstr "Перевод"
 
-#: regeste/gui/main_window.py:201
+#: regeste/gui/main_window.py:203 regeste/gui/main_window.py:636
 msgid "Export archive"
 msgstr "Архивный экспорт"
 
-#: regeste/gui/main_window.py:205
+#: regeste/gui/main_window.py:207
 msgid "Settings"
 msgstr "Настройки"
 
-#: regeste/gui/main_window.py:208 regeste/gui/panels/export_panel.py:119
+#: regeste/gui/main_window.py:210 regeste/gui/panels/export_panel.py:119
 #: regeste/gui/panels/translation_panel.py:149
 msgid "Log"
 msgstr "Журнал"
 
-#: regeste/gui/main_window.py:227
+#: regeste/gui/main_window.py:229
 msgid "File"
 msgstr "Файл"
 
-#: regeste/gui/main_window.py:229
+#: regeste/gui/main_window.py:231
 msgid "New project…"
 msgstr "Новый проект…"
 
-#: regeste/gui/main_window.py:232
+#: regeste/gui/main_window.py:234
 msgid "Open project…"
 msgstr "Открыть проект…"
 
-#: regeste/gui/main_window.py:235
+#: regeste/gui/main_window.py:237
 msgid "Import batch..."
 msgstr "Импорт пачки…"
 
-#: regeste/gui/main_window.py:240 regeste/gui/panels/review_panel.py:222
+#: regeste/gui/main_window.py:240
+msgid "Export project archive..."
+msgstr "Экспорт архива проекта…"
+
+#: regeste/gui/main_window.py:245 regeste/gui/panels/review_panel.py:222
 msgid "Save"
 msgstr "Сохранить"
 
-#: regeste/gui/main_window.py:246
+#: regeste/gui/main_window.py:251
 msgid "Export project…"
 msgstr "Экспортировать проект…"
 
-#: regeste/gui/main_window.py:251
+#: regeste/gui/main_window.py:256
 msgid "Quit Regeste"
 msgstr "Выйти из Regeste"
 
-#: regeste/gui/main_window.py:270
+#: regeste/gui/main_window.py:275
 msgid "Project"
 msgstr "Проект"
 
-#: regeste/gui/main_window.py:304
+#: regeste/gui/main_window.py:309
 msgid "Mode"
 msgstr "Режим"
 
-#: regeste/gui/main_window.py:306
+#: regeste/gui/main_window.py:311
 msgid "New"
 msgstr "Новый"
 
-#: regeste/gui/main_window.py:307
+#: regeste/gui/main_window.py:312
 msgid "Resume"
 msgstr "Продолжить"
 
-#: regeste/gui/main_window.py:317
+#: regeste/gui/main_window.py:322
 msgid "Output mode"
 msgstr "Папка вывода"
 
-#: regeste/gui/main_window.py:319
+#: regeste/gui/main_window.py:324
 msgid "Combined (single file)"
 msgstr "Объединённый (один файл)"
 
-#: regeste/gui/main_window.py:320
+#: regeste/gui/main_window.py:325
 msgid "Per file"
 msgstr "Отдельно по файлам"
 
-#: regeste/gui/main_window.py:333 regeste/gui/panels/export_panel.py:85
+#: regeste/gui/main_window.py:338 regeste/gui/panels/export_panel.py:85
 msgid "Formats"
 msgstr "Форматы"
 
-#: regeste/gui/main_window.py:359
+#: regeste/gui/main_window.py:364
 msgid ""
-"Literal: raw transcription. Hypotheses: illegible or ambiguous passages "
-"are marked with contextual [[hypotheses]], and the notation legend is "
-"included in the exports."
+"Literal: raw transcription. Hypotheses: illegible or ambiguous passages are "
+"marked with contextual [[hypotheses]], and the notation legend is included "
+"in the exports."
 msgstr ""
-"Буквально: сырая транскрипция. Гипотезы: нечитаемые или неоднозначные "
-"места помечаются контекстными [[гипотезами]], и легенда обозначений "
-"включается в экспорт."
+"Буквально: сырая транскрипция. Гипотезы: нечитаемые или неоднозначные места "
+"помечаются контекстными [[гипотезами]], и легенда обозначений включается в "
+"экспорт."
 
-#: regeste/gui/main_window.py:373
+#: regeste/gui/main_window.py:378
 msgid "Launch"
 msgstr "Запустить"
 
-#: regeste/gui/main_window.py:376
+#: regeste/gui/main_window.py:381
 msgid "Stop"
 msgstr "Остановить"
 
-#: regeste/gui/main_window.py:398 regeste/gui/panels/settings_panel.py:232
+#: regeste/gui/main_window.py:403 regeste/gui/panels/settings_panel.py:232
 #: regeste/gui/panels/settings_panel.py:426
 msgid "Costs"
 msgstr "Расходы"
 
-#: regeste/gui/main_window.py:400
+#: regeste/gui/main_window.py:405
 msgid "Current file"
 msgstr "Текущий файл"
 
-#: regeste/gui/main_window.py:403
+#: regeste/gui/main_window.py:408
 msgid "Total"
 msgstr "Итого"
 
-#: regeste/gui/main_window.py:406
+#: regeste/gui/main_window.py:411
 msgid "Projected"
 msgstr "Прогноз"
 
-#: regeste/gui/main_window.py:409
+#: regeste/gui/main_window.py:414
 msgid "Range (min/max per file)"
 msgstr "Диапазон (мин/макс на файл)"
 
-#: regeste/gui/main_window.py:423
+#: regeste/gui/main_window.py:428
 msgid "Select the source folder"
 msgstr "Выберите исходную папку"
 
-#: regeste/gui/main_window.py:428
+#: regeste/gui/main_window.py:433
 msgid "Select the output folder"
 msgstr "Выберите папку вывода"
 
-#: regeste/gui/main_window.py:470
+#: regeste/gui/main_window.py:475
 msgid "New project"
 msgstr "Новый проект"
 
-#: regeste/gui/main_window.py:471 regeste/gui/main_window.py:502
-msgid "Please wait for the current operation to finish before changing project."
+#: regeste/gui/main_window.py:476 regeste/gui/main_window.py:507
+msgid ""
+"Please wait for the current operation to finish before changing project."
 msgstr "Дождитесь завершения текущей операции перед сменой проекта."
 
-#: regeste/gui/main_window.py:474 regeste/gui/main_window.py:505
+#: regeste/gui/main_window.py:479 regeste/gui/main_window.py:510
 msgid "Select the project folder"
 msgstr "Выберите папку проекта"
 
-#: regeste/gui/main_window.py:494
+#: regeste/gui/main_window.py:499
 #, python-brace-format
 msgid "New project created in {path}"
 msgstr "Новый проект создан в {path}"
 
-#: regeste/gui/main_window.py:501
+#: regeste/gui/main_window.py:506
 msgid "Open project"
 msgstr "Открыть проект"
 
-#: regeste/gui/main_window.py:512 regeste/gui/main_window.py:615
-#: regeste/gui/main_window.py:705 regeste/gui/main_window.py:967
-#: regeste/gui/main_window.py:971 regeste/gui/main_window.py:980
-#: regeste/gui/main_window.py:1020 regeste/gui/main_window.py:1026
-#: regeste/gui/panels/review_panel.py:370
+#: regeste/gui/main_window.py:517 regeste/gui/main_window.py:620
+#: regeste/gui/main_window.py:715 regeste/gui/main_window.py:767
+#: regeste/gui/main_window.py:1029 regeste/gui/main_window.py:1033
+#: regeste/gui/main_window.py:1042 regeste/gui/main_window.py:1082
+#: regeste/gui/main_window.py:1088 regeste/gui/panels/review_panel.py:370
 #: regeste/gui/panels/review_panel.py:415
 #: regeste/gui/panels/translation_panel.py:297
 msgid "Error"
 msgstr "Ошибка"
 
-#: regeste/gui/main_window.py:512 regeste/gui/main_window.py:980
+#: regeste/gui/main_window.py:517 regeste/gui/main_window.py:1042
 msgid "No existing project found in this folder to resume."
 msgstr "В этой папке не найден существующий проект для продолжения."
 
-#: regeste/gui/main_window.py:523
+#: regeste/gui/main_window.py:528
 #, python-brace-format
 msgid "Project loaded from {path}"
 msgstr "Проект загружен из {path}"
 
-#: regeste/gui/main_window.py:531
+#: regeste/gui/main_window.py:536
 msgid "Project saved."
 msgstr "Проект сохранён."
 
-#: regeste/gui/main_window.py:538 regeste/gui/main_window.py:544
-#: regeste/gui/main_window.py:627 regeste/gui/panels/export_panel.py:107
+#: regeste/gui/main_window.py:543 regeste/gui/main_window.py:549
+#: regeste/gui/main_window.py:639 regeste/gui/panels/export_panel.py:107
 #: regeste/gui/panels/export_panel.py:151
 #: regeste/gui/panels/export_panel.py:156
 #: regeste/gui/panels/export_panel.py:180
 msgid "Export"
 msgstr "Экспорт"
 
-#: regeste/gui/main_window.py:538
+#: regeste/gui/main_window.py:543
 msgid "Open a project folder before exporting."
 msgstr "Откройте папку проекта перед экспортом."
 
-#: regeste/gui/main_window.py:545
+#: regeste/gui/main_window.py:550
 msgid "Please wait for the current operation to finish before exporting."
 msgstr "Дождитесь завершения текущей операции перед экспортом."
 
-#: regeste/gui/main_window.py:608 regeste/gui/panels/export_panel.py:208
+#: regeste/gui/main_window.py:613 regeste/gui/panels/export_panel.py:208
 #: regeste/gui/panels/export_panel.py:209
 msgid "Export complete."
 msgstr "Экспорт завершён."
 
-#: regeste/gui/main_window.py:628
+#: regeste/gui/main_window.py:640
 #, python-brace-format
 msgid ""
 "Export complete. Files written:\n"
@@ -647,52 +654,72 @@ msgstr ""
 "Экспорт завершён. Записанные файлы:\n"
 "{files}"
 
-#: regeste/gui/main_window.py:638
+#: regeste/gui/main_window.py:648
 msgid "Open a project folder before importing a batch."
 msgstr "Откройте папку проекта перед импортом пачки."
 
-#: regeste/gui/main_window.py:648
+#: regeste/gui/main_window.py:658
 msgid "No image files found in this folder."
 msgstr "В этой папке не найден существующий проект для продолжения."
 
-#: regeste/gui/main_window.py:653
+#: regeste/gui/main_window.py:663
 #, python-brace-format
 msgid "Import: {count} image(s) from {folder} as batch \"{batch_id}\""
 msgstr "Импорт: {count} изображение(й) из {folder} как пачка \"{batch_id}\""
 
-#: regeste/gui/main_window.py:685
+#: regeste/gui/main_window.py:695
 #, python-brace-format
 msgid "Import complete: {count} new file(s) in batch \"{batch_id}\"."
 msgstr "Импорт завершён: {count} новых файлов в пачке \"{batch_id}\"."
 
-#: regeste/gui/main_window.py:692
+#: regeste/gui/main_window.py:702
 #, python-brace-format
 msgid "{count} new file(s) imported as batch \"{batch_id}\"."
 msgstr "{count} новых файлов импортировано как пачка \"{batch_id}\"."
 
-#: regeste/gui/main_window.py:703 regeste/gui/main_window.py:705
+#: regeste/gui/main_window.py:713 regeste/gui/main_window.py:715
 #, python-brace-format
 msgid "Import failed: {error}"
 msgstr "Ошибка экспорта: {error}"
 
-#: regeste/gui/main_window.py:836 regeste/gui/panels/settings_panel.py:541
+#: regeste/gui/main_window.py:731 regeste/gui/main_window.py:736
+#: regeste/gui/main_window.py:759
+msgid "Export project archive"
+msgstr "Экспорт архива проекта"
+
+#: regeste/gui/main_window.py:731
+msgid "Open a project folder before exporting an archive."
+msgstr "Откройте папку проекта перед экспортом архива."
+
+#: regeste/gui/main_window.py:756 regeste/gui/main_window.py:760
+#, python-brace-format
+msgid "Project archive written to {path}"
+msgstr "Архив проекта записан в {path}"
+
+#: regeste/gui/main_window.py:765 regeste/gui/main_window.py:767
+#, python-brace-format
+msgid "Project archive export failed: {error}"
+msgstr "Ошибка экспорта архива проекта: {error}"
+
+#: regeste/gui/main_window.py:898 regeste/gui/panels/settings_panel.py:541
 msgid "Interface language"
 msgstr "Язык интерфейса"
 
-#: regeste/gui/main_window.py:837
-msgid "Please wait for the current operation to finish before switching language."
+#: regeste/gui/main_window.py:899
+msgid ""
+"Please wait for the current operation to finish before switching language."
 msgstr "Дождитесь завершения текущей операции, прежде чем менять язык."
 
-#: regeste/gui/main_window.py:967
+#: regeste/gui/main_window.py:1029
 msgid "Choose a source folder first."
 msgstr "Сначала выберите исходную папку."
 
-#: regeste/gui/main_window.py:1049
+#: regeste/gui/main_window.py:1111
 #, python-brace-format
 msgid "Starting: {count} file(s), provider={provider}, model={model}"
 msgstr "Запуск: {count} файл(ов), провайдер={provider}, модель={model}"
 
-#: regeste/gui/main_window.py:1099
+#: regeste/gui/main_window.py:1161
 #, python-brace-format
 msgid ""
 "{file} - done (model={model}, tokens_in={tin}, tokens_out={tout}, "
@@ -701,17 +728,17 @@ msgstr ""
 "{file} - готово (модель={model}, tokens_in={tin}, tokens_out={tout}, "
 "стоимость={cost})"
 
-#: regeste/gui/main_window.py:1141
+#: regeste/gui/main_window.py:1203
 #, python-brace-format
 msgid "Run failed: {error}"
 msgstr "Сбой выполнения: {error}"
 
-#: regeste/gui/main_window.py:1168
+#: regeste/gui/main_window.py:1230
 #, python-brace-format
 msgid "{done} / {total} - processing: {current}"
 msgstr "{done} / {total} - обработка: {current}"
 
-#: regeste/gui/main_window.py:1178
+#: regeste/gui/main_window.py:1240
 #, python-brace-format
 msgid "{file} - starting"
 msgstr "{file} - запуск"
@@ -807,8 +834,8 @@ msgstr "Подробно"
 
 #: regeste/gui/panels/log_panel.py:62
 msgid ""
-"Show exhaustive diagnostic logs (provider calls, image processing, "
-"registry writes) — useful when troubleshooting an issue."
+"Show exhaustive diagnostic logs (provider calls, image processing, registry "
+"writes) — useful when troubleshooting an issue."
 msgstr ""
 "Показывает исчерпывающие диагностические журналы (вызовы провайдера, "
 "обработка изображений, записи реестра) — полезно при поиске неполадок."
@@ -1091,8 +1118,8 @@ msgid ""
 "No cost data available yet - run a transcription or open a project with "
 "processed files."
 msgstr ""
-"Данных о стоимости пока нет — запустите транскрипцию или откройте проект "
-"с обработанными файлами."
+"Данных о стоимости пока нет — запустите транскрипцию или откройте проект с "
+"обработанными файлами."
 
 #: regeste/gui/panels/settings_panel.py:572
 #: regeste/gui/panels/settings_panel.py:618
@@ -1173,8 +1200,8 @@ msgid ""
 "Removing {entites_a_preserver} or {glossaire} disables the injection of "
 "named entities and the glossary into the prompt."
 msgstr ""
-"Удаление {entites_a_preserver} или {glossaire} отключает вставку "
-"именованных сущностей и глоссария в промпт."
+"Удаление {entites_a_preserver} или {glossaire} отключает вставку именованных"
+" сущностей и глоссария в промпт."
 
 #: regeste/gui/panels/translation_panel.py:246
 msgid "Continue anyway?"
@@ -1206,21 +1233,17 @@ msgid "OCR confidence is low."
 msgstr "Уверенность OCR низкая."
 
 #~ msgid ""
-#~ "The interface language has been saved"
-#~ " ({language}). Restart Regeste for the "
+#~ "The interface language has been saved ({language}). Restart Regeste for the "
 #~ "change to fully apply everywhere."
 #~ msgstr ""
-#~ "Язык интерфейса сохранён ({language}). "
-#~ "Перезапустите Regeste, чтобы изменения "
-#~ "полностью применились везде."
+#~ "Язык интерфейса сохранён ({language}). Перезапустите Regeste, чтобы "
+#~ "изменения полностью применились везде."
 
 #~ msgid ""
-#~ "Restarting the application is required "
-#~ "for the new language to fully "
-#~ "apply everywhere."
+#~ "Restarting the application is required for the new language to fully apply "
+#~ "everywhere."
 #~ msgstr ""
-#~ "Для полного применения нового языка во"
-#~ " всех окнах приложение необходимо "
+#~ "Для полного применения нового языка во всех окнах приложение необходимо "
 #~ "перезапустить."
 
 #~ msgid "Respond in the following language: {lang}"
@@ -1270,4 +1293,3 @@ msgstr "Уверенность OCR низкая."
 
 #~ msgid "Archival formats"
 #~ msgstr "Архивные форматы (через запятую)"
-

@@ -18,6 +18,7 @@ from PySide6.QtCore import QObject, QThread, Signal
 
 from regeste.core.costs import CostTracker
 from regeste.core.project import ProviderConfig
+from regeste.core.project_archive import export_project_archive
 from regeste.core.providers.base import ModelInfo
 from regeste.core.registry import Registry
 from regeste.core.transcriber import Transcriber, create_provider
@@ -108,6 +109,31 @@ class ExportWorker(QObject):
             self.failed.emit(str(exc))
             return
         self.finished.emit(written)
+
+
+class ProjectArchiveWorker(QObject):
+    """Zips the registry (API keys stripped) and its images, off the GUI thread."""
+
+    progress = Signal(int, int)  # done, total
+    finished = Signal(Path)  # archive path written
+    failed = Signal(str)
+
+    def __init__(self, registry: Registry, output_path: Path) -> None:
+        super().__init__()
+        self._registry = registry
+        self._output_path = output_path
+
+    def run(self) -> None:
+        try:
+            export_project_archive(
+                self._registry,
+                self._output_path,
+                on_progress=lambda done, total: self.progress.emit(done, total),
+            )
+        except Exception as exc:  # noqa: BLE001 - surfaced via `failed`, never a crash
+            self.failed.emit(str(exc))
+            return
+        self.finished.emit(self._output_path)
 
 
 class TranslationWorker(QObject):

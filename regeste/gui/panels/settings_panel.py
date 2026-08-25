@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QPlainTextEdit,
     QProgressBar,
     QPushButton,
     QSpinBox,
@@ -480,8 +481,22 @@ class SettingsPanel(QWidget):
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.addWidget(self._build_translation_provider_group())
+        layout.addWidget(self._build_translation_prompt_group())
         layout.addStretch()
         return widget
+
+    def _build_translation_prompt_group(self) -> QGroupBox:
+        from regeste.translation import DEFAULT_TRANSLATION_PROMPT
+
+        group = QGroupBox(_("Translation prompt"))
+        layout = QVBoxLayout(group)
+
+        self.translation_prompt_edit = QPlainTextEdit()
+        self.translation_prompt_edit.setPlainText(DEFAULT_TRANSLATION_PROMPT)
+        self.translation_prompt_edit.setMinimumHeight(160)
+        layout.addWidget(self.translation_prompt_edit)
+
+        return group
 
     def _build_translation_provider_group(self) -> QGroupBox:
         group = QGroupBox(_("Translation model"))
@@ -531,6 +546,19 @@ class SettingsPanel(QWidget):
             base_url=base_url,
             api_key=api_key,
         )
+
+    def get_translation_prompt(self) -> str | None:
+        """Return saved translation prompt or None for default."""
+        from regeste.translation import DEFAULT_TRANSLATION_PROMPT
+
+        text = self.translation_prompt_edit.toPlainText()
+        return None if text == DEFAULT_TRANSLATION_PROMPT else text
+
+    def set_translation_prompt(self, prompt: str | None) -> None:
+        """Restore saved translation prompt (None = use default)."""
+        from regeste.translation import DEFAULT_TRANSLATION_PROMPT
+
+        self.translation_prompt_edit.setPlainText(prompt if prompt is not None else DEFAULT_TRANSLATION_PROMPT)
 
     # --- General sub-tab ---------------------------------------------------------------
 

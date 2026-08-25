@@ -7,15 +7,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Regeste 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-07-19 22:02+0200\n"
+"POT-Creation-Date: 2026-07-19 22:55+0200\n"
 "PO-Revision-Date: 2026-07-11 19:39+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: zh\n"
 "Language-Team: zh <LL@li.org>\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: zh\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "Generated-By: Babel 2.18.0\n"
 
 #: regeste/cli/app.py:102
@@ -23,11 +23,11 @@ msgid "Invalid choice, try again."
 msgstr "选择无效，请重试。"
 
 #: regeste/cli/app.py:107 regeste/gui/import_dialog.py:53
-#: regeste/gui/main_window.py:279
+#: regeste/gui/main_window.py:284
 msgid "Source folder"
 msgstr "源文件夹"
 
-#: regeste/cli/app.py:111 regeste/gui/main_window.py:971
+#: regeste/cli/app.py:111 regeste/gui/main_window.py:1033
 #, python-brace-format
 msgid "Not a folder: {path}"
 msgstr "不是文件夹：{path}"
@@ -74,7 +74,7 @@ msgstr "服务器地址"
 msgid "Could not reach the provider: {error}"
 msgstr "无法连接到提供商：{error}"
 
-#: regeste/cli/app.py:166 regeste/gui/main_window.py:1020
+#: regeste/cli/app.py:166 regeste/gui/main_window.py:1082
 #: regeste/gui/panels/settings_panel.py:345
 msgid "No vision model found for this provider."
 msgstr "未找到该提供商的视觉模型。"
@@ -160,15 +160,15 @@ msgstr "写入逐文件导出？"
 msgid "Transcription modes:"
 msgstr "转录"
 
-#: regeste/cli/app.py:233 regeste/gui/main_window.py:347
+#: regeste/cli/app.py:233 regeste/gui/main_window.py:352
 msgid "Literal"
 msgstr "字面"
 
-#: regeste/cli/app.py:234 regeste/gui/main_window.py:348
+#: regeste/cli/app.py:234 regeste/gui/main_window.py:353
 msgid "Hypotheses"
 msgstr "假设"
 
-#: regeste/cli/app.py:235 regeste/gui/main_window.py:344
+#: regeste/cli/app.py:235 regeste/gui/main_window.py:349
 msgid "Transcription mode"
 msgstr "转录"
 
@@ -226,7 +226,7 @@ msgstr "已翻译 {ok} 个文档，{error} 个错误。"
 msgid "Export to archival formats now?"
 msgstr "现在导出为档案格式吗？"
 
-#: regeste/cli/app.py:356 regeste/gui/main_window.py:574
+#: regeste/cli/app.py:356 regeste/gui/main_window.py:579
 #: regeste/gui/panels/export_panel.py:156
 #: regeste/gui/panels/export_panel.py:180
 msgid "No pivot data found for this project yet."
@@ -241,23 +241,24 @@ msgstr "可用档案格式：{formats}"
 msgid "Archival formats (comma-separated)"
 msgstr "档案格式（用逗号分隔）"
 
-#: regeste/cli/app.py:365 regeste/cli/app.py:385 regeste/gui/main_window.py:290
+#: regeste/cli/app.py:365 regeste/cli/app.py:385
+#: regeste/gui/main_window.py:295
 msgid "Output folder"
 msgstr "输出文件夹"
 
-#: regeste/cli/app.py:375 regeste/gui/main_window.py:613
-#: regeste/gui/main_window.py:615 regeste/gui/panels/export_panel.py:216
+#: regeste/cli/app.py:375 regeste/gui/main_window.py:618
+#: regeste/gui/main_window.py:620 regeste/gui/panels/export_panel.py:216
 #: regeste/gui/panels/export_panel.py:217
 #, python-brace-format
 msgid "Export failed: {error}"
 msgstr "导出失败：{error}"
 
-#: regeste/cli/app.py:376 regeste/cli/app.py:596 regeste/gui/main_window.py:562
-#: regeste/gui/main_window.py:1192
+#: regeste/cli/app.py:376 regeste/cli/app.py:596
+#: regeste/gui/main_window.py:567 regeste/gui/main_window.py:1254
 msgid "Exported files:"
 msgstr "已导出的文件："
 
-#: regeste/cli/app.py:384 regeste/gui/main_window.py:274
+#: regeste/cli/app.py:384 regeste/gui/main_window.py:279
 msgid "Project name"
 msgstr "项目名称"
 
@@ -278,8 +279,8 @@ msgstr "支出上限（美元，可选）"
 msgid "~{amount}"
 msgstr "约 {amount}"
 
-#: regeste/cli/app.py:430 regeste/gui/main_window.py:407
-#: regeste/gui/main_window.py:1127
+#: regeste/cli/app.py:430 regeste/gui/main_window.py:412
+#: regeste/gui/main_window.py:1189
 msgid "not enough data yet"
 msgstr "数据尚不足"
 
@@ -293,7 +294,7 @@ msgstr "{file} - {processed}/{total} - 费用：{cost} - 预计：{projected}"
 msgid "Done: {ok} ok, {error} error, {total} total - total cost: {cost}"
 msgstr "完成：成功 {ok}，出错 {error}，共 {total} 个 - 总费用：{cost}"
 
-#: regeste/cli/app.py:466 regeste/gui/main_window.py:1026
+#: regeste/cli/app.py:466 regeste/gui/main_window.py:1088
 #, python-brace-format
 msgid "Provider unavailable: {error}"
 msgstr "提供商不可用：{error}"
@@ -323,12 +324,12 @@ msgstr "已中止。"
 msgid "This will erase existing progress - confirm?"
 msgstr "此操作将清除现有进度 - 确认吗？"
 
-#: regeste/cli/app.py:573 regeste/gui/main_window.py:1079
+#: regeste/cli/app.py:573 regeste/gui/main_window.py:1141
 #, python-brace-format
 msgid "Files to process: {count}"
 msgstr "待处理文件数：{count}"
 
-#: regeste/cli/app.py:575 regeste/gui/main_window.py:1080
+#: regeste/cli/app.py:575 regeste/gui/main_window.py:1142
 #, python-brace-format
 msgid "Rough cost estimate (heuristic, not a measurement): ~{amount}"
 msgstr "费用粗略估算（启发式估算，非精确测量）：约 {amount}"
@@ -341,7 +342,7 @@ msgstr "立即开始？"
 msgid "Run cancelled."
 msgstr "运行已取消。"
 
-#: regeste/cli/app.py:587 regeste/gui/main_window.py:1035
+#: regeste/cli/app.py:587 regeste/gui/main_window.py:1097
 msgid "Nothing to process."
 msgstr "没有需要处理的内容。"
 
@@ -356,13 +357,13 @@ msgid "Description"
 msgstr "描述"
 
 #: regeste/gui/import_dialog.py:45 regeste/gui/import_dialog.py:102
-#: regeste/gui/main_window.py:638 regeste/gui/main_window.py:648
-#: regeste/gui/main_window.py:691
+#: regeste/gui/main_window.py:648 regeste/gui/main_window.py:658
+#: regeste/gui/main_window.py:701
 msgid "Import batch"
 msgstr "导入批次"
 
-#: regeste/gui/import_dialog.py:56 regeste/gui/main_window.py:282
-#: regeste/gui/main_window.py:292 regeste/gui/panels/export_panel.py:79
+#: regeste/gui/import_dialog.py:56 regeste/gui/main_window.py:287
+#: regeste/gui/main_window.py:297 regeste/gui/panels/export_panel.py:79
 msgid "Browse..."
 msgstr "浏览……"
 
@@ -403,226 +404,232 @@ msgstr "导入：已忽略 {folder} 中的 {count} 个非图像文件"
 msgid "Import: {file} already exists, copy skipped"
 msgstr "导入：{file} 已存在，跳过复制"
 
-#: regeste/gui/main_window.py:90 regeste/gui/main_window.py:1086
+#: regeste/gui/main_window.py:90 regeste/gui/main_window.py:1148
 msgid "Confirm"
 msgstr "确认"
 
 #: regeste/gui/main_window.py:91
 msgid ""
-"A project already exists in this folder - starting a new one will erase "
-"its progress. Continue?"
+"A project already exists in this folder - starting a new one will erase its "
+"progress. Continue?"
 msgstr "该文件夹中已存在项目 - 新建项目将清除其进度。是否继续？"
 
 #: regeste/gui/main_window.py:106
 msgid "Regeste"
 msgstr "Regeste"
 
-#: regeste/gui/main_window.py:180
+#: regeste/gui/main_window.py:182
 msgid "Language"
 msgstr "语言"
 
-#: regeste/gui/main_window.py:182 regeste/gui/panels/settings_panel.py:545
+#: regeste/gui/main_window.py:184 regeste/gui/panels/settings_panel.py:545
 msgid "Automatic (system language)"
 msgstr "自动（系统语言）"
 
-#: regeste/gui/main_window.py:193 regeste/gui/panels/review_panel.py:82
+#: regeste/gui/main_window.py:195 regeste/gui/main_window.py:634
+#: regeste/gui/panels/review_panel.py:82
 #: regeste/gui/panels/settings_panel.py:418
 msgid "Transcription"
 msgstr "转录"
 
-#: regeste/gui/main_window.py:196
+#: regeste/gui/main_window.py:198
 msgid "Review"
 msgstr "审核"
 
-#: regeste/gui/main_window.py:199 regeste/gui/panels/settings_panel.py:230
+#: regeste/gui/main_window.py:201 regeste/gui/panels/settings_panel.py:230
 #: regeste/gui/panels/translation_panel.py:127
 #: regeste/gui/panels/translation_panel.py:254
 msgid "Translation"
 msgstr "翻译"
 
-#: regeste/gui/main_window.py:201
+#: regeste/gui/main_window.py:203 regeste/gui/main_window.py:636
 msgid "Export archive"
 msgstr "存档导出"
 
-#: regeste/gui/main_window.py:205
+#: regeste/gui/main_window.py:207
 msgid "Settings"
 msgstr "设置"
 
-#: regeste/gui/main_window.py:208 regeste/gui/panels/export_panel.py:119
+#: regeste/gui/main_window.py:210 regeste/gui/panels/export_panel.py:119
 #: regeste/gui/panels/translation_panel.py:149
 msgid "Log"
 msgstr "日志"
 
-#: regeste/gui/main_window.py:227
+#: regeste/gui/main_window.py:229
 msgid "File"
 msgstr "文件"
 
-#: regeste/gui/main_window.py:229
+#: regeste/gui/main_window.py:231
 msgid "New project…"
 msgstr "新建项目…"
 
-#: regeste/gui/main_window.py:232
+#: regeste/gui/main_window.py:234
 msgid "Open project…"
 msgstr "打开项目…"
 
-#: regeste/gui/main_window.py:235
+#: regeste/gui/main_window.py:237
 msgid "Import batch..."
 msgstr "导入批次…"
 
-#: regeste/gui/main_window.py:240 regeste/gui/panels/review_panel.py:222
+#: regeste/gui/main_window.py:240
+msgid "Export project archive..."
+msgstr "导出项目存档…"
+
+#: regeste/gui/main_window.py:245 regeste/gui/panels/review_panel.py:222
 msgid "Save"
 msgstr "保存"
 
-#: regeste/gui/main_window.py:246
+#: regeste/gui/main_window.py:251
 msgid "Export project…"
 msgstr "导出项目…"
 
-#: regeste/gui/main_window.py:251
+#: regeste/gui/main_window.py:256
 msgid "Quit Regeste"
 msgstr "退出 Regeste"
 
-#: regeste/gui/main_window.py:270
+#: regeste/gui/main_window.py:275
 msgid "Project"
 msgstr "项目"
 
-#: regeste/gui/main_window.py:304
+#: regeste/gui/main_window.py:309
 msgid "Mode"
 msgstr "模式"
 
-#: regeste/gui/main_window.py:306
+#: regeste/gui/main_window.py:311
 msgid "New"
 msgstr "新建"
 
-#: regeste/gui/main_window.py:307
+#: regeste/gui/main_window.py:312
 msgid "Resume"
 msgstr "继续"
 
-#: regeste/gui/main_window.py:317
+#: regeste/gui/main_window.py:322
 msgid "Output mode"
 msgstr "输出文件夹"
 
-#: regeste/gui/main_window.py:319
+#: regeste/gui/main_window.py:324
 msgid "Combined (single file)"
 msgstr "合并（单个文件）"
 
-#: regeste/gui/main_window.py:320
+#: regeste/gui/main_window.py:325
 msgid "Per file"
 msgstr "逐文件"
 
-#: regeste/gui/main_window.py:333 regeste/gui/panels/export_panel.py:85
+#: regeste/gui/main_window.py:338 regeste/gui/panels/export_panel.py:85
 msgid "Formats"
 msgstr "格式"
 
-#: regeste/gui/main_window.py:359
+#: regeste/gui/main_window.py:364
 msgid ""
-"Literal: raw transcription. Hypotheses: illegible or ambiguous passages "
-"are marked with contextual [[hypotheses]], and the notation legend is "
-"included in the exports."
+"Literal: raw transcription. Hypotheses: illegible or ambiguous passages are "
+"marked with contextual [[hypotheses]], and the notation legend is included "
+"in the exports."
 msgstr "字面：原始转录。假设：无法辨认或模糊的段落用上下文相关的[[hypotheses]]标记，符号说明包含在导出中。"
 
-#: regeste/gui/main_window.py:373
+#: regeste/gui/main_window.py:378
 msgid "Launch"
 msgstr "启动"
 
-#: regeste/gui/main_window.py:376
+#: regeste/gui/main_window.py:381
 msgid "Stop"
 msgstr "停止"
 
-#: regeste/gui/main_window.py:398 regeste/gui/panels/settings_panel.py:232
+#: regeste/gui/main_window.py:403 regeste/gui/panels/settings_panel.py:232
 #: regeste/gui/panels/settings_panel.py:426
 msgid "Costs"
 msgstr "费用"
 
-#: regeste/gui/main_window.py:400
+#: regeste/gui/main_window.py:405
 msgid "Current file"
 msgstr "当前文件"
 
-#: regeste/gui/main_window.py:403
+#: regeste/gui/main_window.py:408
 msgid "Total"
 msgstr "总计"
 
-#: regeste/gui/main_window.py:406
+#: regeste/gui/main_window.py:411
 msgid "Projected"
 msgstr "预计"
 
-#: regeste/gui/main_window.py:409
+#: regeste/gui/main_window.py:414
 msgid "Range (min/max per file)"
 msgstr "区间（每文件最小/最大）"
 
-#: regeste/gui/main_window.py:423
+#: regeste/gui/main_window.py:428
 msgid "Select the source folder"
 msgstr "选择源文件夹"
 
-#: regeste/gui/main_window.py:428
+#: regeste/gui/main_window.py:433
 msgid "Select the output folder"
 msgstr "选择输出文件夹"
 
-#: regeste/gui/main_window.py:470
+#: regeste/gui/main_window.py:475
 msgid "New project"
 msgstr "新建项目"
 
-#: regeste/gui/main_window.py:471 regeste/gui/main_window.py:502
-msgid "Please wait for the current operation to finish before changing project."
+#: regeste/gui/main_window.py:476 regeste/gui/main_window.py:507
+msgid ""
+"Please wait for the current operation to finish before changing project."
 msgstr "请等待当前操作完成后再切换项目。"
 
-#: regeste/gui/main_window.py:474 regeste/gui/main_window.py:505
+#: regeste/gui/main_window.py:479 regeste/gui/main_window.py:510
 msgid "Select the project folder"
 msgstr "选择项目文件夹"
 
-#: regeste/gui/main_window.py:494
+#: regeste/gui/main_window.py:499
 #, python-brace-format
 msgid "New project created in {path}"
 msgstr "已在 {path} 中创建新项目"
 
-#: regeste/gui/main_window.py:501
+#: regeste/gui/main_window.py:506
 msgid "Open project"
 msgstr "打开项目"
 
-#: regeste/gui/main_window.py:512 regeste/gui/main_window.py:615
-#: regeste/gui/main_window.py:705 regeste/gui/main_window.py:967
-#: regeste/gui/main_window.py:971 regeste/gui/main_window.py:980
-#: regeste/gui/main_window.py:1020 regeste/gui/main_window.py:1026
-#: regeste/gui/panels/review_panel.py:370
+#: regeste/gui/main_window.py:517 regeste/gui/main_window.py:620
+#: regeste/gui/main_window.py:715 regeste/gui/main_window.py:767
+#: regeste/gui/main_window.py:1029 regeste/gui/main_window.py:1033
+#: regeste/gui/main_window.py:1042 regeste/gui/main_window.py:1082
+#: regeste/gui/main_window.py:1088 regeste/gui/panels/review_panel.py:370
 #: regeste/gui/panels/review_panel.py:415
 #: regeste/gui/panels/translation_panel.py:297
 msgid "Error"
 msgstr "错误"
 
-#: regeste/gui/main_window.py:512 regeste/gui/main_window.py:980
+#: regeste/gui/main_window.py:517 regeste/gui/main_window.py:1042
 msgid "No existing project found in this folder to resume."
 msgstr "在该文件夹中未找到可继续的现有项目。"
 
-#: regeste/gui/main_window.py:523
+#: regeste/gui/main_window.py:528
 #, python-brace-format
 msgid "Project loaded from {path}"
 msgstr "已从 {path} 加载项目"
 
-#: regeste/gui/main_window.py:531
+#: regeste/gui/main_window.py:536
 msgid "Project saved."
 msgstr "项目已保存。"
 
-#: regeste/gui/main_window.py:538 regeste/gui/main_window.py:544
-#: regeste/gui/main_window.py:627 regeste/gui/panels/export_panel.py:107
+#: regeste/gui/main_window.py:543 regeste/gui/main_window.py:549
+#: regeste/gui/main_window.py:639 regeste/gui/panels/export_panel.py:107
 #: regeste/gui/panels/export_panel.py:151
 #: regeste/gui/panels/export_panel.py:156
 #: regeste/gui/panels/export_panel.py:180
 msgid "Export"
 msgstr "导出"
 
-#: regeste/gui/main_window.py:538
+#: regeste/gui/main_window.py:543
 msgid "Open a project folder before exporting."
 msgstr "导出前请先打开项目文件夹。"
 
-#: regeste/gui/main_window.py:545
+#: regeste/gui/main_window.py:550
 msgid "Please wait for the current operation to finish before exporting."
 msgstr "请等待当前操作完成后再导出。"
 
-#: regeste/gui/main_window.py:608 regeste/gui/panels/export_panel.py:208
+#: regeste/gui/main_window.py:613 regeste/gui/panels/export_panel.py:208
 #: regeste/gui/panels/export_panel.py:209
 msgid "Export complete."
 msgstr "导出完成。"
 
-#: regeste/gui/main_window.py:628
+#: regeste/gui/main_window.py:640
 #, python-brace-format
 msgid ""
 "Export complete. Files written:\n"
@@ -631,69 +638,89 @@ msgstr ""
 "导出完成。已写入文件:\n"
 "{files}"
 
-#: regeste/gui/main_window.py:638
+#: regeste/gui/main_window.py:648
 msgid "Open a project folder before importing a batch."
 msgstr "请先打开项目文件夹，然后再导入批次。"
 
-#: regeste/gui/main_window.py:648
+#: regeste/gui/main_window.py:658
 msgid "No image files found in this folder."
 msgstr "在该文件夹中未找到可继续的现有项目。"
 
-#: regeste/gui/main_window.py:653
+#: regeste/gui/main_window.py:663
 #, python-brace-format
 msgid "Import: {count} image(s) from {folder} as batch \"{batch_id}\""
 msgstr "导入：来自 {folder} 的 {count} 张图像，作为批次“{batch_id}”"
 
-#: regeste/gui/main_window.py:685
+#: regeste/gui/main_window.py:695
 #, python-brace-format
 msgid "Import complete: {count} new file(s) in batch \"{batch_id}\"."
 msgstr "导入完成：批次“{batch_id}”中有 {count} 个新文件。"
 
-#: regeste/gui/main_window.py:692
+#: regeste/gui/main_window.py:702
 #, python-brace-format
 msgid "{count} new file(s) imported as batch \"{batch_id}\"."
 msgstr "{count} 个新文件已作为批次“{batch_id}”导入。"
 
-#: regeste/gui/main_window.py:703 regeste/gui/main_window.py:705
+#: regeste/gui/main_window.py:713 regeste/gui/main_window.py:715
 #, python-brace-format
 msgid "Import failed: {error}"
 msgstr "导出失败：{error}"
 
-#: regeste/gui/main_window.py:836 regeste/gui/panels/settings_panel.py:541
+#: regeste/gui/main_window.py:731 regeste/gui/main_window.py:736
+#: regeste/gui/main_window.py:759
+msgid "Export project archive"
+msgstr "导出项目存档"
+
+#: regeste/gui/main_window.py:731
+msgid "Open a project folder before exporting an archive."
+msgstr "请先打开项目文件夹，然后再导出存档。"
+
+#: regeste/gui/main_window.py:756 regeste/gui/main_window.py:760
+#, python-brace-format
+msgid "Project archive written to {path}"
+msgstr "项目存档已写入 {path}"
+
+#: regeste/gui/main_window.py:765 regeste/gui/main_window.py:767
+#, python-brace-format
+msgid "Project archive export failed: {error}"
+msgstr "项目存档导出失败：{error}"
+
+#: regeste/gui/main_window.py:898 regeste/gui/panels/settings_panel.py:541
 msgid "Interface language"
 msgstr "界面语言"
 
-#: regeste/gui/main_window.py:837
-msgid "Please wait for the current operation to finish before switching language."
+#: regeste/gui/main_window.py:899
+msgid ""
+"Please wait for the current operation to finish before switching language."
 msgstr "请等待当前操作完成后再切换语言。"
 
-#: regeste/gui/main_window.py:967
+#: regeste/gui/main_window.py:1029
 msgid "Choose a source folder first."
 msgstr "请先选择源文件夹。"
 
-#: regeste/gui/main_window.py:1049
+#: regeste/gui/main_window.py:1111
 #, python-brace-format
 msgid "Starting: {count} file(s), provider={provider}, model={model}"
 msgstr "开始：{count} 个文件，提供商={provider}，模型={model}"
 
-#: regeste/gui/main_window.py:1099
+#: regeste/gui/main_window.py:1161
 #, python-brace-format
 msgid ""
 "{file} - done (model={model}, tokens_in={tin}, tokens_out={tout}, "
 "cost={cost})"
 msgstr "{file} - 完成（模型={model}，tokens_in={tin}，tokens_out={tout}，费用={cost}）"
 
-#: regeste/gui/main_window.py:1141
+#: regeste/gui/main_window.py:1203
 #, python-brace-format
 msgid "Run failed: {error}"
 msgstr "运行失败：{error}"
 
-#: regeste/gui/main_window.py:1168
+#: regeste/gui/main_window.py:1230
 #, python-brace-format
 msgid "{done} / {total} - processing: {current}"
 msgstr "{done} / {total} - 正在处理：{current}"
 
-#: regeste/gui/main_window.py:1178
+#: regeste/gui/main_window.py:1240
 #, python-brace-format
 msgid "{file} - starting"
 msgstr "{file} - 开始"
@@ -789,8 +816,8 @@ msgstr "详细模式"
 
 #: regeste/gui/panels/log_panel.py:62
 msgid ""
-"Show exhaustive diagnostic logs (provider calls, image processing, "
-"registry writes) — useful when troubleshooting an issue."
+"Show exhaustive diagnostic logs (provider calls, image processing, registry "
+"writes) — useful when troubleshooting an issue."
 msgstr "显示详尽的诊断日志（提供商调用、图像处理、注册表写入）——排查问题时很有用。"
 
 #: regeste/gui/panels/log_panel.py:73
@@ -1178,15 +1205,13 @@ msgid "OCR confidence is low."
 msgstr "OCR 置信度较低。"
 
 #~ msgid ""
-#~ "The interface language has been saved"
-#~ " ({language}). Restart Regeste for the "
+#~ "The interface language has been saved ({language}). Restart Regeste for the "
 #~ "change to fully apply everywhere."
 #~ msgstr "界面语言已保存（{language}）。请重启 Regeste 以使更改在各处完全生效。"
 
 #~ msgid ""
-#~ "Restarting the application is required "
-#~ "for the new language to fully "
-#~ "apply everywhere."
+#~ "Restarting the application is required for the new language to fully apply "
+#~ "everywhere."
 #~ msgstr "需要重启应用程序，新语言才能在各处完全生效。"
 
 #~ msgid "Respond in the following language: {lang}"
@@ -1236,4 +1261,3 @@ msgstr "OCR 置信度较低。"
 
 #~ msgid "Archival formats"
 #~ msgstr "档案格式（用逗号分隔）"
-

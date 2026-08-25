@@ -96,3 +96,15 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
 )
+
+app = BUNDLE(
+    exe,
+    name="Regeste.app",
+    icon="assets/Regeste.icns",
+    bundle_identifier="dev.regeste.app",
+    info_plist={
+        "CFBundleName": "Regeste",
+        "CFBundleDisplayName": "Regeste",
+        "CFBundleShortVersionString": "0.2.2",
+    },
+)

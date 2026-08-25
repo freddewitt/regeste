@@ -51,7 +51,7 @@ from .import_worker import BatchImportWorker, list_importable_images
 from .panels import ExportPanel, LogPanel, QtLogHandler, ReviewPanel, SettingsPanel, TranslationPanel
 from .panels.export_panel import FORMAT_SPECS
 from .panels.log_panel import LOGGER_NAME
-from .worker import ExportWorker, ModelFetchWorker, TranscriptionWorker, start_worker
+from .worker import ExportWorker, ModelFetchWorker, ProjectArchiveWorker, TranscriptionWorker, start_worker
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +138,8 @@ class MainWindow(QMainWindow):
         self._import_thread: QThread | None = None
         self._import_worker: BatchImportWorker | None = None
         self._import_batch_id = ""
+        self._archive_thread: QThread | None = None
+        self._archive_worker: ProjectArchiveWorker | None = None
         self._menu_export_thread: QThread | None = None
         self._menu_export_worker: ExportWorker | None = None
         self._menu_export_written: list = []
@@ -194,13 +196,15 @@ class MainWindow(QMainWindow):
 
         self.review_panel = ReviewPanel()
         self.tabs.addTab(self._scrollable(self.review_panel), _("Review"))
-        self.translation_panel = TranslationPanel()
+
+        self.settings_panel = SettingsPanel()
+        self.settings_panel.settings_saved.connect(self._on_settings_saved)
+
+        self.translation_panel = TranslationPanel(settings_panel=self.settings_panel)
         self.translation_panel.translation_prompt_changed.connect(self._on_translation_prompt_changed)
         self.tabs.addTab(self._scrollable(self.translation_panel), _("Translation"))
         self._push_translation_context()
         self.tabs.addTab(self._scrollable(self.export_panel), _("Export archive"))
-        self.settings_panel = SettingsPanel()
-        self.settings_panel.settings_saved.connect(self._on_settings_saved)
         self._settings_tab_widget = self._scrollable(self.settings_panel)
         self.tabs.addTab(self._settings_tab_widget, _("Settings"))
         self._push_settings_context()
@@ -234,6 +238,9 @@ class MainWindow(QMainWindow):
 
         self.import_batch_action = file_menu.addAction(_("Import batch..."))
         self.import_batch_action.triggered.connect(self._on_import_batch_clicked)
+
+        self.export_archive_action = file_menu.addAction(_("Export project archive..."))
+        self.export_archive_action.triggered.connect(self._on_export_archive_clicked)
 
         file_menu.addSeparator()
 
@@ -718,6 +725,58 @@ class MainWindow(QMainWindow):
         self.import_batch_action.setEnabled(True)
         self.launch_button.setEnabled(True)
 
+    # --- Project archive export -------------------------------------------------------
+
+    def _on_export_archive_clicked(self) -> None:
+        if self._registry is None:
+            QMessageBox.information(
+                self, _("Export project archive"), _("Open a project folder before exporting an archive.")
+            )
+            return
+        default_name = f"{self.project_name_edit.text().strip() or 'regeste'}.zip"
+        output_file, _filter = QFileDialog.getSaveFileName(
+            self, _("Export project archive"), default_name, "Zip (*.zip)"
+        )
+        if not output_file:
+            return
+        output_path = Path(output_file)
+        self.progress_bar.setMaximum(max(len(self._registry.files), 1))
+        self.progress_bar.setValue(0)
+        self.progress_label.setText(f"0 / {len(self._registry.files)}")
+
+        self._archive_worker = ProjectArchiveWorker(self._registry, output_path)
+        self._archive_thread = start_worker(self._archive_worker)
+        self._archive_worker.progress.connect(self._on_import_progress)
+        self._archive_worker.finished.connect(self._on_export_archive_finished)
+        self._archive_worker.failed.connect(self._on_export_archive_failed)
+        self._archive_thread.start()
+        self.export_archive_action.setEnabled(False)
+        self.launch_button.setEnabled(False)
+
+    def _on_export_archive_finished(self, output_path: Path) -> None:
+        self._finish_export_archive()
+        logger.info(_("Project archive written to {path}").format(path=output_path))
+        QMessageBox.information(
+            self,
+            _("Export project archive"),
+            _("Project archive written to {path}").format(path=output_path),
+        )
+
+    def _on_export_archive_failed(self, message: str) -> None:
+        self._finish_export_archive()
+        logger.error(_("Project archive export failed: {error}").format(error=message))
+        QMessageBox.critical(
+            self, _("Error"), _("Project archive export failed: {error}").format(error=message)
+        )
+
+    def _finish_export_archive(self) -> None:
+        if self._archive_thread is not None:
+            self._archive_thread.wait(5000)
+        self._archive_thread = None
+        self._archive_worker = None
+        self.export_archive_action.setEnabled(True)
+        self.launch_button.setEnabled(True)
+
     def _apply_config(self, config: ProjectConfig) -> None:
         """Pushes a restored `ProjectConfig` into every field, main screen and Settings."""
         self.project_name_edit.setText(config.project_name)
@@ -784,6 +843,7 @@ class MainWindow(QMainWindow):
         self._workers = panel.get_workers()
         self._translation_provider_config = panel.get_translation_provider()
         self._translation_same_as_ocr = panel.get_translation_same_as_ocr()
+        self._translation_prompt = panel.get_translation_prompt()
 
     def _on_settings_saved(self) -> None:
         self._sync_settings_from_panel()
@@ -957,7 +1017,7 @@ class MainWindow(QMainWindow):
         self.translation_panel.set_effective_translation_provider(
             self._effective_translation_provider()
         )
-        self.translation_panel.set_translation_prompt(self._translation_prompt)
+        self.settings_panel.set_translation_prompt(self._translation_prompt)
 
     def _on_translation_prompt_changed(self, prompt) -> None:
         self._translation_prompt = prompt
