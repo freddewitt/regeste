@@ -54,6 +54,14 @@ class ProjectConfig:
     translation_same_as_ocr: bool = True
     # None means "use the default translation prompt".
     translation_prompt: str | None = None
+    # Opt-in: off by default (sequential) - translation providers are more likely
+    # to rate-limit than vision providers under concurrent load, so this isn't
+    # turned on automatically the way OCR's `workers` is.
+    translation_parallel: bool = False
+    # Opt-in: off by default. When on, each file's OCR output is written to
+    # `output_dir` as soon as it's transcribed (no waiting for manual review),
+    # and the app doesn't auto-switch to the Review tab once the run finishes.
+    no_review: bool = False
 
     def to_meta(self) -> dict[str, Any]:
         """Serialize for storage in `Registry.meta` (regeste.json)."""
@@ -82,6 +90,8 @@ class ProjectConfig:
             ),
             "translation_same_as_ocr": self.translation_same_as_ocr,
             "translation_prompt": self.translation_prompt,
+            "translation_parallel": self.translation_parallel,
+            "no_review": self.no_review,
         }
 
     @classmethod
@@ -122,4 +132,6 @@ class ProjectConfig:
             ),
             translation_same_as_ocr=meta.get("translation_same_as_ocr", True),
             translation_prompt=meta.get("translation_prompt"),
+            translation_parallel=meta.get("translation_parallel", False),
+            no_review=meta.get("no_review", False),
         )

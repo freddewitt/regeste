@@ -504,8 +504,23 @@ class SettingsPanel(QWidget):
         layout = QVBoxLayout(widget)
         layout.addWidget(self._build_translation_provider_group())
         layout.addWidget(self._build_translation_prompt_group())
+        layout.addWidget(self._build_translation_parallel_group())
         layout.addStretch()
         return widget
+
+    def _build_translation_parallel_group(self) -> QGroupBox:
+        group = QGroupBox(_("Advanced"))
+        layout = QVBoxLayout(group)
+        self.translation_parallel_checkbox = QCheckBox(_("Translate several pieces in parallel"))
+        self.translation_parallel_checkbox.setToolTip(
+            _(
+                "Off by default: translation providers are more likely to rate-limit "
+                "than vision providers under concurrent load. Uses the same worker "
+                "count as OCR (OCR sub-tab)."
+            )
+        )
+        layout.addWidget(self.translation_parallel_checkbox)
+        return group
 
     def _build_translation_prompt_group(self) -> QGroupBox:
         group = QGroupBox(_("Translation prompt"))
@@ -570,6 +585,9 @@ class SettingsPanel(QWidget):
 
     def get_translation_same_as_ocr(self) -> bool:
         return self.translation_same_checkbox.isChecked()
+
+    def get_translation_parallel(self) -> bool:
+        return self.translation_parallel_checkbox.isChecked()
 
     def get_translation_provider(self) -> ProviderConfig | None:
         """The separate translation provider, kept regardless of the checkbox so
@@ -722,6 +740,7 @@ class SettingsPanel(QWidget):
         ui_language: str | None,
         translation_provider: ProviderConfig | None,
         translation_same_as_ocr: bool,
+        translation_parallel: bool = False,
     ) -> None:
         """Repopulate every widget from the current config. Called once at startup
         with the app defaults, and again whenever a project is opened/resumed
@@ -743,6 +762,7 @@ class SettingsPanel(QWidget):
         self.translation_base_url_edit.setText(tp.base_url if tp and tp.base_url else "")
         self.translation_api_key_edit.setText(tp.api_key if tp and tp.api_key else "")
         self.translation_model_edit.setText(tp.model if tp else "")
+        self.translation_parallel_checkbox.setChecked(translation_parallel)
         self._on_translation_same_toggled(self.translation_same_checkbox.isChecked())
 
         self.disable_resize_checkbox.setChecked(resize.disabled)

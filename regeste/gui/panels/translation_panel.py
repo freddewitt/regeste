@@ -83,6 +83,9 @@ class TranslationPanel(QWidget):
         # by the main window; the provider choice UI lives in Settings.
         self._translation_provider: ProviderConfig | None = None
         self._corpus: list[Piece] | None = None
+        # 1 = sequential (default), pushed by the main window from the
+        # "Translate several pieces in parallel" setting + OCR's worker count.
+        self._workers = 1
         self._build_ui()
         self.on_project_changed(None)
 
@@ -143,6 +146,10 @@ class TranslationPanel(QWidget):
         """Store the resolved translation provider (same as OCR or separate),
         pushed by the main window; used when the user launches a batch."""
         self._translation_provider = config
+
+    def set_translation_workers(self, workers: int) -> None:
+        """Store the worker count for the next batch (1 = sequential)."""
+        self._workers = max(1, workers)
 
     # --- Project synchronisation --------------------------------------------------
 
@@ -257,6 +264,7 @@ class TranslationPanel(QWidget):
             glossary=glossary,
             template=prompt,
             enforce_guard=enforce_guard,
+            workers=self._workers,
         )
         self._thread = start_worker(self._worker)
         self._worker.progress.connect(self._on_batch_progress)

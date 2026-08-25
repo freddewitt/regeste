@@ -11,6 +11,7 @@ formats over a whole corpus) and to `translate_piece()` (network call) — see
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Callable
 
@@ -200,6 +201,7 @@ class TranslationBatchWorker(QObject):
         glossary: dict[str, str] | None = None,
         template: str | None = None,
         enforce_guard: bool = True,
+        workers: int = 1,
     ) -> None:
         super().__init__()
         self._source_dir = source_dir
@@ -210,28 +212,60 @@ class TranslationBatchWorker(QObject):
         self._glossary = glossary
         self._template = template
         self._enforce_guard = enforce_guard
+        # 1 (default) = sequential, unchanged behavior. Opt-in only: translation
+        # providers are more likely to rate-limit than vision providers under
+        # concurrent load, unlike OCR's `workers` which is on by default.
+        self._workers = max(1, workers)
+
+    def _translate_one(self, piece: Piece) -> tuple[Piece, Exception | None]:
+        try:
+            translate_piece(
+                piece,
+                self._target_language,
+                self._provider,
+                self._model,
+                glossary=self._glossary,
+                source_language=piece.language_detected,
+                template=self._template,
+                enforce_guard=self._enforce_guard,
+            )
+            return piece, None
+        except Exception as exc:  # noqa: BLE001 - one piece's failure doesn't stop the batch
+            return piece, exc
 
     def run(self) -> None:
         succeeded: list[str] = []
         errors: list[tuple[str, str]] = []
         total = len(self._pieces)
-        for done, piece in enumerate(self._pieces, start=1):
-            try:
-                translate_piece(
-                    piece,
-                    self._target_language,
-                    self._provider,
-                    self._model,
-                    glossary=self._glossary,
-                    source_language=piece.language_detected,
-                    template=self._template,
-                    enforce_guard=self._enforce_guard,
-                )
-                save_piece(self._source_dir, piece)
-                succeeded.append(piece.id)
-            except Exception as exc:  # noqa: BLE001 - one piece's failure doesn't stop the batch
-                errors.append((piece.id, str(exc)))
-            self.progress.emit(done, total, piece.id)
+
+        if self._workers <= 1:
+            for done, piece in enumerate(self._pieces, start=1):
+                _, exc = self._translate_one(piece)
+                if exc is None:
+                    save_piece(self._source_dir, piece)
+                    succeeded.append(piece.id)
+                else:
+                    errors.append((piece.id, str(exc)))
+                self.progress.emit(done, total, piece.id)
+            self.finished.emit(succeeded, errors)
+            return
+
+        # Parallel path: only the network call runs concurrently. Results are
+        # collected and saved on this single thread (as_completed loop), same
+        # split as `Transcriber.run()`, so `save_piece()`/signal emission stay
+        # serialized - no concurrent-write or cross-thread signal concerns.
+        done = 0
+        with ThreadPoolExecutor(max_workers=self._workers) as executor:
+            futures = {executor.submit(self._translate_one, piece): piece for piece in self._pieces}
+            for future in as_completed(futures):
+                piece, exc = future.result()
+                done += 1
+                if exc is None:
+                    save_piece(self._source_dir, piece)
+                    succeeded.append(piece.id)
+                else:
+                    errors.append((piece.id, str(exc)))
+                self.progress.emit(done, total, piece.id)
         self.finished.emit(succeeded, errors)
 
 

@@ -35,6 +35,36 @@ def test_system_prompt_round_trips_when_none():
     assert restored.system_prompt is None
 
 
+def test_translation_parallel_round_trips_when_true():
+    config = _base_config(translation_parallel=True)
+    restored = ProjectConfig.from_meta(config.to_meta())
+    assert restored.translation_parallel is True
+
+
+def test_translation_parallel_defaults_to_false_when_absent_from_meta():
+    """Backward compatibility: a `regeste.json` written before this field existed."""
+    config = _base_config()
+    meta = config.to_meta()
+    del meta["translation_parallel"]
+    restored = ProjectConfig.from_meta(meta)
+    assert restored.translation_parallel is False
+
+
+def test_no_review_round_trips_when_true():
+    config = _base_config(no_review=True)
+    restored = ProjectConfig.from_meta(config.to_meta())
+    assert restored.no_review is True
+
+
+def test_no_review_defaults_to_false_when_absent_from_meta():
+    """Backward compatibility: a `regeste.json` written before this field existed."""
+    config = _base_config()
+    meta = config.to_meta()
+    del meta["no_review"]
+    restored = ProjectConfig.from_meta(meta)
+    assert restored.no_review is False
+
+
 def test_system_prompt_defaults_to_none_when_absent_from_meta():
     """Backward compatibility: a `regeste.json` written before this field existed."""
     config = _base_config()

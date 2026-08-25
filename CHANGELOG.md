@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.3] – 2026-08-25
+
+### Added
+- **Project archive module** — `regeste/core/project_archive.py` with comprehensive project import/export handling and related tests.
+
+### Changed
+- **Review-less mode** — skip manual review step; automatically advance to review tab on transcription completion.
+- **GUI updates** — refinements in `main_window.py`, `worker.py`, and `__init__.py` for improved workflow handling.
+- **Translation catalogs** — updated 8 language catalogs (de, es, pt, ja, zh, ar, ru) with latest strings; 0 fuzzy, 0 untranslated.
+
 ## [0.2.2] – 2026-07-19
 
 ### Added

@@ -56,6 +56,55 @@ class _FakeTranslationProvider(TranslationProvider):
         return TranslationResult(text=self._text, tokens_in=1, tokens_out=1, model=model)
 
 
+def test_translation_batch_worker_default_is_sequential(qtbot, tmp_path):
+    from regeste.gui.worker import TranslationBatchWorker
+
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    pieces = [_validated_piece(source_dir, piece_id=f"{i}.jpg") for i in range(3)]
+
+    worker = TranslationBatchWorker(
+        source_dir, pieces, "en", _FakeTranslationProvider(text="Translated."), "fake-model"
+    )
+    assert worker._workers == 1
+
+    events: list[tuple] = []
+    worker.progress.connect(lambda *args: events.append(args))
+    results: dict = {}
+    worker.finished.connect(lambda ok, err: results.update(succeeded=ok, errors=err))
+    worker.run()
+
+    assert results["succeeded"] == [p.id for p in pieces]
+    assert results["errors"] == []
+    for piece in pieces:
+        assert load_piece(source_dir, piece.id).translations["en"].text == "Translated."
+
+
+def test_translation_batch_worker_parallel_translates_every_piece(qtbot, tmp_path):
+    from regeste.gui.worker import TranslationBatchWorker
+
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    pieces = [_validated_piece(source_dir, piece_id=f"{i}.jpg") for i in range(5)]
+
+    worker = TranslationBatchWorker(
+        source_dir,
+        pieces,
+        "en",
+        _FakeTranslationProvider(text="Translated."),
+        "fake-model",
+        workers=3,
+    )
+    results: dict = {}
+    worker.finished.connect(lambda ok, err: results.update(succeeded=ok, errors=err))
+    worker.run()
+
+    assert sorted(results["succeeded"]) == sorted(p.id for p in pieces)
+    assert results["errors"] == []
+    for piece in pieces:
+        assert load_piece(source_dir, piece.id).translations["en"].text == "Translated."
+
+
 def test_main_window_has_six_tabs(qtbot):
     window = MainWindow()
     qtbot.addWidget(window)
@@ -739,6 +788,36 @@ def test_settings_panel_ocr_prompt_follows_transcription_mode_when_uncustomized(
 
     panel.set_transcription_mode(TranscriptionMode.LITERAL)
     assert panel.get_system_prompt() is None
+
+
+def test_settings_panel_translation_parallel_off_by_default(qtbot):
+    from regeste.gui.panels import SettingsPanel
+
+    panel = SettingsPanel()
+    qtbot.addWidget(panel)
+    assert panel.get_translation_parallel() is False
+
+    panel.translation_parallel_checkbox.setChecked(True)
+    assert panel.get_translation_parallel() is True
+
+
+def test_main_window_translation_parallel_defaults_off_and_pushes_workers(qtbot, tmp_path):
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window.set_source_dir(tmp_path)
+
+    config = window._build_project_config(tmp_path)
+    assert config.translation_parallel is False
+    assert window.translation_panel._workers == 1
+
+    window.settings_panel.workers_spin.setValue(5)
+    window.settings_panel.translation_parallel_checkbox.setChecked(True)
+    window._sync_settings_from_panel()
+    window._push_translation_context()
+
+    config = window._build_project_config(tmp_path)
+    assert config.translation_parallel is True
+    assert window.translation_panel._workers == 5
 
 
 def test_main_window_hypotheses_mode_reaches_project_config_uncustomized(qtbot, tmp_path):

@@ -121,6 +121,7 @@ class MainWindow(QMainWindow):
         self._translation_provider_config: ProviderConfig | None = None
         self._translation_same_as_ocr = True
         self._translation_prompt: str | None = None
+        self._translation_parallel = False
         self._preprocessing = PreprocessOptions()
         self._resize_options = ResizeOptions()
         self._forced_language: str | None = None
@@ -135,6 +136,8 @@ class MainWindow(QMainWindow):
         self._worker: TranscriptionWorker | None = None
         self._validate_thread: QThread | None = None
         self._validate_worker: ModelFetchWorker | None = None
+        self._pending_resume_registry: Registry | None = None
+        self._pending_resume_config: ProjectConfig | None = None
         self._import_thread: QThread | None = None
         self._import_worker: BatchImportWorker | None = None
         self._import_batch_id = ""
@@ -195,7 +198,7 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self._scrollable(self._build_transcription_tab()), _("Transcription"))
 
         self.review_panel = ReviewPanel()
-        self.tabs.addTab(self._scrollable(self.review_panel), _("Review"))
+        self._review_tab_index = self.tabs.addTab(self._scrollable(self.review_panel), _("Review"))
 
         self.settings_panel = SettingsPanel()
         self.settings_panel.settings_saved.connect(self._on_settings_saved)
@@ -331,6 +334,15 @@ class MainWindow(QMainWindow):
         self._output_mode_group.addButton(self.per_file_radio)
         output_mode_layout.addWidget(self.combined_radio)
         output_mode_layout.addWidget(self.per_file_radio)
+        self.no_review_checkbox = QCheckBox(_("Without review"))
+        self.no_review_checkbox.setToolTip(
+            _(
+                "When checked, each file is written to the output folder as soon as its "
+                "transcription is done, without waiting for manual review. When unchecked "
+                "(default), the app switches to the Review tab once transcription finishes."
+            )
+        )
+        output_mode_layout.addWidget(self.no_review_checkbox)
         output_mode_layout.addStretch()
         left_column.addWidget(output_mode_group)
         left_column.addStretch()
@@ -785,6 +797,7 @@ class MainWindow(QMainWindow):
         # Exclusive radios: combined wins if both were set (older configs allowed both).
         self.combined_radio.setChecked(config.export.single_file)
         self.per_file_radio.setChecked(not config.export.single_file)
+        self.no_review_checkbox.setChecked(config.no_review)
         for fmt, checkbox in self.format_checkboxes.items():
             checkbox.setChecked(fmt in config.export.formats)
         self.hypotheses_radio.setChecked(
@@ -805,6 +818,7 @@ class MainWindow(QMainWindow):
         self._translation_provider_config = config.translation_provider
         self._translation_same_as_ocr = config.translation_same_as_ocr
         self._translation_prompt = config.translation_prompt
+        self._translation_parallel = config.translation_parallel
         self._push_translation_context()
         self._push_settings_context()
 
@@ -824,6 +838,7 @@ class MainWindow(QMainWindow):
             ui_language=self._ui_language,
             translation_provider=self._translation_provider_config,
             translation_same_as_ocr=self._translation_same_as_ocr,
+            translation_parallel=self._translation_parallel,
         )
 
     def _sync_settings_from_panel(self) -> None:
@@ -846,6 +861,7 @@ class MainWindow(QMainWindow):
         self._translation_provider_config = panel.get_translation_provider()
         self._translation_same_as_ocr = panel.get_translation_same_as_ocr()
         self._translation_prompt = panel.get_translation_prompt()
+        self._translation_parallel = panel.get_translation_parallel()
 
     def _on_settings_saved(self) -> None:
         self._sync_settings_from_panel()
@@ -930,6 +946,7 @@ class MainWindow(QMainWindow):
             "combined": self.combined_radio.isChecked(),
             "hypotheses": self.hypotheses_radio.isChecked(),
             "formats": {fmt: cb.isChecked() for fmt, cb in self.format_checkboxes.items()},
+            "no_review": self.no_review_checkbox.isChecked(),
             "resume_mode": self.resume_mode_radio.isChecked(),
         }
         log_text = self.log_panel.log_view.toPlainText()
@@ -950,6 +967,7 @@ class MainWindow(QMainWindow):
         for fmt, checked in state["formats"].items():
             if fmt in self.format_checkboxes:
                 self.format_checkboxes[fmt].setChecked(checked)
+        self.no_review_checkbox.setChecked(state["no_review"])
         if state["resume_mode"]:
             self.resume_mode_radio.setChecked(True)
         else:
@@ -1002,6 +1020,8 @@ class MainWindow(QMainWindow):
             translation_provider=self._translation_provider_config,
             translation_same_as_ocr=self._translation_same_as_ocr,
             translation_prompt=self._translation_prompt,
+            translation_parallel=self._translation_parallel,
+            no_review=self.no_review_checkbox.isChecked(),
         )
 
     def _persist_meta(self) -> None:
@@ -1025,6 +1045,9 @@ class MainWindow(QMainWindow):
             self._effective_translation_provider()
         )
         self.settings_panel.set_translation_prompt(self._translation_prompt)
+        self.translation_panel.set_translation_workers(
+            self._workers if self._translation_parallel else 1
+        )
 
     def _on_translation_prompt_changed(self, prompt) -> None:
         self._translation_prompt = prompt
@@ -1078,16 +1101,25 @@ class MainWindow(QMainWindow):
 
     def _validate_provider_then_resume(self, registry: Registry, config: ProjectConfig) -> None:
         self.launch_button.setEnabled(False)
+        # Stashed on self (not captured in a lambda) so the `succeeded` connection
+        # below stays a plain bound-method connection: Qt then resolves receiver
+        # thread affinity from `self` and queues the call onto the GUI thread. A
+        # lambda receiver has no such affinity, so Qt would invoke it directly on
+        # the worker thread - fatal here since it leads to a QMessageBox further
+        # down (`_start_run` -> `_confirm_run`), and NSWindow must be created on
+        # the main thread on macOS.
+        self._pending_resume_registry = registry
+        self._pending_resume_config = config
         self._validate_worker = ModelFetchWorker(config.provider)
         self._validate_thread = start_worker(self._validate_worker)
-        self._validate_worker.succeeded.connect(
-            lambda models: self._on_provider_validated(registry, config, models)
-        )
+        self._validate_worker.succeeded.connect(self._on_provider_validated)
         self._validate_worker.failed.connect(self._on_provider_validation_failed)
         self._validate_thread.start()
 
-    def _on_provider_validated(self, registry: Registry, config: ProjectConfig, models: list) -> None:
+    def _on_provider_validated(self, models: list) -> None:
         self.launch_button.setEnabled(True)
+        registry = self._pending_resume_registry
+        config = self._pending_resume_config
         if not models:
             QMessageBox.critical(self, _("Error"), _("No vision model found for this provider."))
             return
@@ -1183,6 +1215,9 @@ class MainWindow(QMainWindow):
                 message += f" - {entry.transcription.error_message}"
             logger.error(message)
 
+        if status == "ok" and self.no_review_checkbox.isChecked():
+            self._export_and_log()
+
         self._in_flight_files.discard(state.file_name)
         self.progress_bar.setMaximum(max(state.total, 1))
         self.progress_bar.setValue(state.processed)
@@ -1204,6 +1239,8 @@ class MainWindow(QMainWindow):
         self._export_and_log()
         self._push_cost_data()
         self._sync_pivot_and_notify(Path(self.source_dir_edit.text()))
+        if not self.no_review_checkbox.isChecked():
+            self.tabs.setCurrentIndex(self._review_tab_index)
 
     def _on_run_failed(self, message: str) -> None:
         self._finish_run()

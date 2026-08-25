@@ -27,39 +27,34 @@ MAX_DELAY_SECONDS = 60.0
 
 # Instruction sent to the model (spec §4) — configurable per project, not an
 # interface string, so not wrapped in `_()` (it addresses the model, not the user).
-# Kept in English regardless of the interface language: instructions in English
-# are more reliable across model sizes (the model's internal representation is
-# most aligned with English), while the document content itself is always
-# transcribed in its original language (rule 4 below) — only the instructions
-# benefit from English, not the archival material.
 DEFAULT_SYSTEM_PROMPT = """\
-You are an expert in paleographic transcription and OCR of archival documents.
+Tu es un expert en transcription paléographique et en OCR de documents d'archives.
 
-Document context:
-- Reference: {cote}
-- Fonds/series: {fonds_serie}
-- Probable period: {periode}
-- Nature of the handwriting: {type_ecriture}
+Contexte du document :
+- Cote : {cote}
+- Fonds/série : {fonds_serie}
+- Période probable : {periode}
+- Nature de l'écriture : {type_ecriture}
 
-Instructions:
-1. Transcribe the visible text on the image completely and faithfully, in its original reading order.
-2. Preserve the original spelling, punctuation, capitalization and abbreviations, even if incorrect or archaic. Never correct, modernize or normalize the text.
-3. The document may be handwritten, typewritten, or a mix of both. Base your reading on the visible strokes, not on what seems linguistically likely.
-4. The text may be written in a language other than the interface language, or mix several languages. Transcribe each passage in its original language, without translating it.
-5. Flag an uncertain word with [?] and an illegible passage with [illegible]. Never guess a word from context alone if the strokes don't visually confirm it.
-6. Mark strikethroughs with {struck-through text} and additions/insertions with <text>, at their original position.
-7. If the image contains no text, leave the transcription empty and provide a documentary description of the image instead.
+Consignes :
+1. Transcris intégralement et fidèlement le texte visible sur l'image, dans l'ordre de lecture d'origine.
+2. Conserve l'orthographe, la ponctuation, les majuscules et les abréviations d'origine, même fautives ou désuètes. Ne corrige, ne modernise, ne normalise jamais le texte.
+3. Le document peut être manuscrit, dactylographié, ou mélanger les deux. Fonde ta lecture sur le tracé visible, pas sur ce qui te semble probable linguistiquement.
+4. Le texte peut être rédigé dans une langue autre que le français, ou mélanger plusieurs langues. Transcris chaque passage dans sa langue d'origine, sans traduire.
+5. Signale un mot incertain par [?] et un passage illisible par [illisible]. Ne devine jamais un mot à partir du seul contexte si le tracé ne le confirme pas visuellement.
+6. Note les ratures avec {texte barré} et les ajouts/insertions avec <texte>, à leur position d'origine.
+7. Si l'image ne contient pas de texte, laisse la transcription vide et fournis une description documentaire de l'image.
 
-Respond with markdown sections exactly in this form, omitting any that don't apply:
+Réponds avec des sections markdown exactement sous cette forme, en omettant celles qui ne s'appliquent pas :
 
 ## TEXT
-<full transcription>
+<transcription intégrale>
 
 ## DESCRIPTION
-<documentary description, if relevant>
+<description documentaire, si pertinent>
 
-## LANGUAGE
-<main language detected in the document>
+## LANGUE
+<langue principale détectée du document>
 """
 
 # HYPOTHESES mode: same base instructions, plus the [[...]] notation legend. The
@@ -78,7 +73,7 @@ def default_prompt_for_mode(mode: TranscriptionMode) -> str:
 # At OCR time the archival fields (cote, fonds/série…) are not yet assigned —
 # they are entered later during review — so missing values render as this marker.
 OCR_PLACEHOLDER_KEYS = ("cote", "fonds_serie", "periode", "type_ecriture")
-MISSING_PLACEHOLDER = "(not provided)"
+MISSING_PLACEHOLDER = "(non renseigné)"
 
 
 def resolve_ocr_placeholders(prompt: str, values: dict[str, str] | None = None) -> str:

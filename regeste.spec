@@ -105,6 +105,6 @@ app = BUNDLE(
     info_plist={
         "CFBundleName": "Regeste",
         "CFBundleDisplayName": "Regeste",
-        "CFBundleShortVersionString": "0.2.2",
+        "CFBundleShortVersionString": "0.2.3",
     },
 )

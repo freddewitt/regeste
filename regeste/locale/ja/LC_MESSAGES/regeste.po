@@ -7,15 +7,15 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Regeste 0.1.0\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-25 12:59+0200\n"
+"POT-Creation-Date: 2026-08-25 13:26+0200\n"
 "PO-Revision-Date: 2026-07-11 19:39+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: ja <LL@li.org>\n"
 "Language: ja\n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
+"Language-Team: ja <LL@li.org>\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
 #: regeste/cli/app.py:102
@@ -23,11 +23,11 @@ msgid "Invalid choice, try again."
 msgstr "無効な選択です。もう一度お試しください。"
 
 #: regeste/cli/app.py:107 regeste/gui/import_dialog.py:53
-#: regeste/gui/main_window.py:286
+#: regeste/gui/main_window.py:287
 msgid "Source folder"
 msgstr "元フォルダ"
 
-#: regeste/cli/app.py:111 regeste/gui/main_window.py:1043
+#: regeste/cli/app.py:111 regeste/gui/main_window.py:1064
 #, python-brace-format
 msgid "Not a folder: {path}"
 msgstr "フォルダではありません: {path}"
@@ -42,9 +42,7 @@ msgstr "もう一度試しますか?"
 msgid ""
 "Existing project found: {total} files ({ok} ok, {error} error, {pending} "
 "pending)"
-msgstr ""
-"既存のプロジェクトが見つかりました: {total} 件のファイル(成功 {ok} 件、エ"
-"ラー {error} 件、未処理 {pending} 件)"
+msgstr "既存のプロジェクトが見つかりました: {total} 件のファイル(成功 {ok} 件、エラー {error} 件、未処理 {pending} 件)"
 
 #: regeste/cli/app.py:145 regeste/cli/app.py:258
 msgid "Available providers:"
@@ -54,19 +52,19 @@ msgstr "利用可能なプロバイダー:"
 #: regeste/gui/panels/review_panel.py:230
 #: regeste/gui/panels/settings_panel.py:268
 #: regeste/gui/panels/settings_panel.py:272
-#: regeste/gui/panels/settings_panel.py:546
+#: regeste/gui/panels/settings_panel.py:561
 msgid "Provider"
 msgstr "プロバイダー"
 
 #: regeste/cli/app.py:151 regeste/cli/app.py:262
 #: regeste/gui/panels/settings_panel.py:284
-#: regeste/gui/panels/settings_panel.py:553
+#: regeste/gui/panels/settings_panel.py:568
 msgid "API key"
 msgstr "APIキー"
 
 #: regeste/cli/app.py:153 regeste/cli/app.py:264
 #: regeste/gui/panels/settings_panel.py:279
-#: regeste/gui/panels/settings_panel.py:550
+#: regeste/gui/panels/settings_panel.py:565
 msgid "Server URL"
 msgstr "サーバーURL"
 
@@ -76,7 +74,7 @@ msgstr "サーバーURL"
 msgid "Could not reach the provider: {error}"
 msgstr "プロバイダーに接続できませんでした: {error}"
 
-#: regeste/cli/app.py:166 regeste/gui/main_window.py:1092
+#: regeste/cli/app.py:166 regeste/gui/main_window.py:1113
 #: regeste/gui/panels/settings_panel.py:368
 msgid "No vision model found for this provider."
 msgstr "このプロバイダーで利用可能なビジョンモデルが見つかりません。"
@@ -97,7 +95,7 @@ msgstr "利用可能なビジョンモデル:"
 #: regeste/gui/panels/review_panel.py:230
 #: regeste/gui/panels/settings_panel.py:295
 #: regeste/gui/panels/settings_panel.py:454
-#: regeste/gui/panels/settings_panel.py:557
+#: regeste/gui/panels/settings_panel.py:572
 msgid "Model"
 msgstr "モデル"
 
@@ -162,15 +160,15 @@ msgstr "ファイルごとに出力しますか?"
 msgid "Transcription modes:"
 msgstr "文字起こし"
 
-#: regeste/cli/app.py:233 regeste/gui/main_window.py:354
+#: regeste/cli/app.py:233 regeste/gui/main_window.py:364
 msgid "Literal"
 msgstr "逐語"
 
-#: regeste/cli/app.py:234 regeste/gui/main_window.py:355
+#: regeste/cli/app.py:234 regeste/gui/main_window.py:365
 msgid "Hypotheses"
 msgstr "仮説"
 
-#: regeste/cli/app.py:235 regeste/gui/main_window.py:351
+#: regeste/cli/app.py:235 regeste/gui/main_window.py:361
 msgid "Transcription mode"
 msgstr "文字起こし"
 
@@ -202,7 +200,7 @@ msgstr "カスタム翻訳プロンプト"
 msgid "Translate the transcribed pieces now?"
 msgstr "文字起こし済みの資料を今すぐ翻訳しますか？"
 
-#: regeste/cli/app.py:307 regeste/gui/panels/translation_panel.py:236
+#: regeste/cli/app.py:307 regeste/gui/panels/translation_panel.py:243
 msgid "No translation model is configured."
 msgstr "翻訳モデルが設定されていません。"
 
@@ -228,7 +226,7 @@ msgstr "翻訳完了：{ok} 件、エラー {error} 件。"
 msgid "Export to archival formats now?"
 msgstr "アーカイブ形式で今すぐエクスポートしますか？"
 
-#: regeste/cli/app.py:356 regeste/gui/main_window.py:582
+#: regeste/cli/app.py:356 regeste/gui/main_window.py:592
 #: regeste/gui/panels/export_panel.py:156
 #: regeste/gui/panels/export_panel.py:180
 msgid "No pivot data found for this project yet."
@@ -243,23 +241,23 @@ msgstr "利用可能なアーカイブ形式：{formats}"
 msgid "Archival formats (comma-separated)"
 msgstr "アーカイブ形式（カンマ区切り）"
 
-#: regeste/cli/app.py:365 regeste/cli/app.py:385 regeste/gui/main_window.py:297
+#: regeste/cli/app.py:365 regeste/cli/app.py:385 regeste/gui/main_window.py:298
 msgid "Output folder"
 msgstr "出力フォルダ"
 
-#: regeste/cli/app.py:375 regeste/gui/main_window.py:621
-#: regeste/gui/main_window.py:623 regeste/gui/panels/export_panel.py:216
+#: regeste/cli/app.py:375 regeste/gui/main_window.py:631
+#: regeste/gui/main_window.py:633 regeste/gui/panels/export_panel.py:216
 #: regeste/gui/panels/export_panel.py:217
 #, python-brace-format
 msgid "Export failed: {error}"
 msgstr "エクスポートに失敗しました：{error}"
 
-#: regeste/cli/app.py:376 regeste/cli/app.py:596 regeste/gui/main_window.py:570
-#: regeste/gui/main_window.py:1264
+#: regeste/cli/app.py:376 regeste/cli/app.py:596 regeste/gui/main_window.py:580
+#: regeste/gui/main_window.py:1290
 msgid "Exported files:"
 msgstr "出力ファイル:"
 
-#: regeste/cli/app.py:384 regeste/gui/main_window.py:281
+#: regeste/cli/app.py:384 regeste/gui/main_window.py:282
 msgid "Project name"
 msgstr "プロジェクト名"
 
@@ -280,8 +278,8 @@ msgstr "支出上限($、任意)"
 msgid "~{amount}"
 msgstr "約{amount}"
 
-#: regeste/cli/app.py:430 regeste/gui/main_window.py:415
-#: regeste/gui/main_window.py:1199
+#: regeste/cli/app.py:430 regeste/gui/main_window.py:425
+#: regeste/gui/main_window.py:1223
 msgid "not enough data yet"
 msgstr "まだデータが不足しています"
 
@@ -293,10 +291,9 @@ msgstr "{file} - {processed}/{total} - コスト: {cost} - 予測: {projected}"
 #: regeste/cli/app.py:449
 #, python-brace-format
 msgid "Done: {ok} ok, {error} error, {total} total - total cost: {cost}"
-msgstr ""
-"完了: 成功 {ok} 件、エラー {error} 件、合計 {total} 件 - 総コスト: {cost}"
+msgstr "完了: 成功 {ok} 件、エラー {error} 件、合計 {total} 件 - 総コスト: {cost}"
 
-#: regeste/cli/app.py:466 regeste/gui/main_window.py:1098
+#: regeste/cli/app.py:466 regeste/gui/main_window.py:1119
 #, python-brace-format
 msgid "Provider unavailable: {error}"
 msgstr "プロバイダーを利用できません: {error}"
@@ -326,12 +323,12 @@ msgstr "中止しました。"
 msgid "This will erase existing progress - confirm?"
 msgstr "既存の進捗が消去されます - よろしいですか?"
 
-#: regeste/cli/app.py:573 regeste/gui/main_window.py:1151 tests/test_gui.py:309
+#: regeste/cli/app.py:573 regeste/gui/main_window.py:1172
 #, python-brace-format
 msgid "Files to process: {count}"
 msgstr "処理対象ファイル数: {count}"
 
-#: regeste/cli/app.py:575 regeste/gui/main_window.py:1152 tests/test_gui.py:311
+#: regeste/cli/app.py:575 regeste/gui/main_window.py:1173
 #, python-brace-format
 msgid "Rough cost estimate (heuristic, not a measurement): ~{amount}"
 msgstr "概算コスト(目安であり実測値ではありません): 約{amount}"
@@ -344,7 +341,7 @@ msgstr "今すぐ開始しますか?"
 msgid "Run cancelled."
 msgstr "実行がキャンセルされました。"
 
-#: regeste/cli/app.py:587 regeste/gui/main_window.py:1107 tests/test_gui.py:334
+#: regeste/cli/app.py:587 regeste/gui/main_window.py:1128
 msgid "Nothing to process."
 msgstr "処理対象がありません。"
 
@@ -359,13 +356,13 @@ msgid "Description"
 msgstr "説明"
 
 #: regeste/gui/import_dialog.py:45 regeste/gui/import_dialog.py:102
-#: regeste/gui/main_window.py:651 regeste/gui/main_window.py:661
-#: regeste/gui/main_window.py:704
+#: regeste/gui/main_window.py:661 regeste/gui/main_window.py:671
+#: regeste/gui/main_window.py:714
 msgid "Import batch"
 msgstr "バッチインポート"
 
-#: regeste/gui/import_dialog.py:56 regeste/gui/main_window.py:289
-#: regeste/gui/main_window.py:299 regeste/gui/panels/export_panel.py:79
+#: regeste/gui/import_dialog.py:56 regeste/gui/main_window.py:290
+#: regeste/gui/main_window.py:300 regeste/gui/panels/export_panel.py:79
 msgid "Browse..."
 msgstr "参照..."
 
@@ -392,11 +389,9 @@ msgstr "元フォルダを選択"
 #: regeste/gui/import_dialog.py:103
 #, python-brace-format
 msgid ""
-"The identifier \"{requested}\" already exists. Batch imported as \"{resolved}"
-"\"."
-msgstr ""
-"識別子「{requested}」は既に存在します。バッチは「{resolved}」としてインポート"
-"されました。"
+"The identifier \"{requested}\" already exists. Batch imported as "
+"\"{resolved}\"."
+msgstr "識別子「{requested}」は既に存在します。バッチは「{resolved}」としてインポートされました。"
 
 #: regeste/gui/import_worker.py:44
 #, python-brace-format
@@ -408,236 +403,248 @@ msgstr "インポート: {folder}内の{count}個の非画像ファイルを無�
 msgid "Import: {file} already exists, copy skipped"
 msgstr "インポート: {file}は既に存在するため、コピーをスキップしました"
 
-#: regeste/gui/main_window.py:90 regeste/gui/main_window.py:1158
+#: regeste/gui/main_window.py:90 regeste/gui/main_window.py:1179
 msgid "Confirm"
 msgstr "確認"
 
 #: regeste/gui/main_window.py:91
 msgid ""
-"A project already exists in this folder - starting a new one will erase its "
-"progress. Continue?"
-msgstr ""
-"このフォルダには既にプロジェクトが存在します。新規作成すると進捗が消去されま"
-"す。続行しますか?"
+"A project already exists in this folder - starting a new one will erase "
+"its progress. Continue?"
+msgstr "このフォルダには既にプロジェクトが存在します。新規作成すると進捗が消去されます。続行しますか?"
 
 #: regeste/gui/main_window.py:106
 msgid "Regeste"
 msgstr "Regeste"
 
-#: regeste/gui/main_window.py:182
+#: regeste/gui/main_window.py:183
 msgid "Language"
 msgstr "言語"
 
-#: regeste/gui/main_window.py:184 regeste/gui/panels/settings_panel.py:607
+#: regeste/gui/main_window.py:185 regeste/gui/panels/settings_panel.py:625
 msgid "Automatic (system language)"
 msgstr "自動(システム言語)"
 
-#: regeste/gui/main_window.py:195 regeste/gui/main_window.py:637
+#: regeste/gui/main_window.py:196 regeste/gui/main_window.py:647
 #: regeste/gui/panels/review_panel.py:82
 #: regeste/gui/panels/settings_panel.py:441
 msgid "Transcription"
 msgstr "文字起こし"
 
-#: regeste/gui/main_window.py:198
+#: regeste/gui/main_window.py:199
 msgid "Review"
 msgstr "レビュー"
 
-#: regeste/gui/main_window.py:205 regeste/gui/panels/settings_panel.py:243
-#: regeste/gui/panels/translation_panel.py:114
-#: regeste/gui/panels/translation_panel.py:231
+#: regeste/gui/main_window.py:206 regeste/gui/panels/settings_panel.py:243
+#: regeste/gui/panels/translation_panel.py:117
+#: regeste/gui/panels/translation_panel.py:238
 msgid "Translation"
 msgstr "翻訳"
 
-#: regeste/gui/main_window.py:207 regeste/gui/main_window.py:639
+#: regeste/gui/main_window.py:208 regeste/gui/main_window.py:649
 msgid "Export archive"
 msgstr "アーカイブ書き出し"
 
-#: regeste/gui/main_window.py:209 tests/test_i18n.py:82
+#: regeste/gui/main_window.py:210
 msgid "Settings"
 msgstr "設定"
 
-#: regeste/gui/main_window.py:212 regeste/gui/panels/export_panel.py:119
-#: regeste/gui/panels/translation_panel.py:136
+#: regeste/gui/main_window.py:213 regeste/gui/panels/export_panel.py:119
+#: regeste/gui/panels/translation_panel.py:139
 msgid "Log"
 msgstr "ログ"
 
-#: regeste/gui/main_window.py:231
+#: regeste/gui/main_window.py:232
 msgid "File"
 msgstr "ファイル"
 
-#: regeste/gui/main_window.py:233
+#: regeste/gui/main_window.py:234
 msgid "New project…"
 msgstr "新規プロジェクト…"
 
-#: regeste/gui/main_window.py:236
+#: regeste/gui/main_window.py:237
 msgid "Open project…"
 msgstr "プロジェクトを開く…"
 
-#: regeste/gui/main_window.py:239
+#: regeste/gui/main_window.py:240
 msgid "Import batch..."
 msgstr "バッチインポート…"
 
-#: regeste/gui/main_window.py:242
+#: regeste/gui/main_window.py:243
 msgid "Export project archive..."
 msgstr "プロジェクトアーカイブをエクスポート…"
 
-#: regeste/gui/main_window.py:247 regeste/gui/panels/review_panel.py:222
+#: regeste/gui/main_window.py:248 regeste/gui/panels/review_panel.py:222
 msgid "Save"
 msgstr "保存"
 
-#: regeste/gui/main_window.py:253
+#: regeste/gui/main_window.py:254
 msgid "Export project…"
 msgstr "プロジェクトをエクスポート…"
 
-#: regeste/gui/main_window.py:258
+#: regeste/gui/main_window.py:259
 msgid "Quit Regeste"
 msgstr "Regeste を終了"
 
-#: regeste/gui/main_window.py:277
+#: regeste/gui/main_window.py:278
 msgid "Project"
 msgstr "プロジェクト"
 
-#: regeste/gui/main_window.py:311
+#: regeste/gui/main_window.py:312
 msgid "Mode"
 msgstr "モード"
 
-#: regeste/gui/main_window.py:313
+#: regeste/gui/main_window.py:314
 msgid "New"
 msgstr "新規"
 
-#: regeste/gui/main_window.py:314
+#: regeste/gui/main_window.py:315
 msgid "Resume"
 msgstr "再開"
 
-#: regeste/gui/main_window.py:324
+#: regeste/gui/main_window.py:325
 msgid "Output mode"
 msgstr "出力フォルダ"
 
-#: regeste/gui/main_window.py:326
+#: regeste/gui/main_window.py:327
 msgid "Combined (single file)"
 msgstr "統合(単一ファイル)"
 
-#: regeste/gui/main_window.py:327
+#: regeste/gui/main_window.py:328
 msgid "Per file"
 msgstr "ファイルごと"
 
-#: regeste/gui/main_window.py:340 regeste/gui/panels/export_panel.py:85
+#: regeste/gui/main_window.py:335
+msgid "Without review"
+msgstr "レビューなし"
+
+#: regeste/gui/main_window.py:338
+msgid ""
+"When checked, each file is written to the output folder as soon as its "
+"transcription is done, without waiting for manual review. When unchecked "
+"(default), the app switches to the Review tab once transcription "
+"finishes."
+msgstr ""
+"オンにすると、各ファイルは転写が完了し次第、手動レビューを待たずに出力"
+"フォルダーへ書き込まれます。オフの場合(デフォルト)、転写完了後にアプリ"
+"は自動的にレビュータブへ切り替わります。"
+
+#: regeste/gui/main_window.py:350 regeste/gui/panels/export_panel.py:85
 msgid "Formats"
 msgstr "形式"
 
-#: regeste/gui/main_window.py:367
+#: regeste/gui/main_window.py:377
 msgid ""
-"Literal: raw transcription. Hypotheses: illegible or ambiguous passages are "
-"marked with contextual [[hypotheses]], and the notation legend is included "
-"in the exports."
+"Literal: raw transcription. Hypotheses: illegible or ambiguous passages "
+"are marked with contextual [[hypotheses]], and the notation legend is "
+"included in the exports."
 msgstr ""
-"逐語: 生の文字起こし。仮説: 読めない箇所や曖昧な箇所は文脈に応じた"
-"[[hypotheses]]でマークされ、記法の凡例がエクスポートに含まれます。"
+"逐語: 生の文字起こし。仮説: "
+"読めない箇所や曖昧な箇所は文脈に応じた[[hypotheses]]でマークされ、記法の凡例がエクスポートに含まれます。"
 
-#: regeste/gui/main_window.py:381 tests/test_gui.py:665
+#: regeste/gui/main_window.py:391
 msgid "Launch"
 msgstr "実行"
 
-#: regeste/gui/main_window.py:384
+#: regeste/gui/main_window.py:394
 msgid "Stop"
 msgstr "停止"
 
-#: regeste/gui/main_window.py:406 regeste/gui/panels/settings_panel.py:245
+#: regeste/gui/main_window.py:416 regeste/gui/panels/settings_panel.py:245
 #: regeste/gui/panels/settings_panel.py:449
 msgid "Costs"
 msgstr "コスト"
 
-#: regeste/gui/main_window.py:408
+#: regeste/gui/main_window.py:418
 msgid "Current file"
 msgstr "現在のファイル"
 
-#: regeste/gui/main_window.py:411
+#: regeste/gui/main_window.py:421
 msgid "Total"
 msgstr "合計"
 
-#: regeste/gui/main_window.py:414
+#: regeste/gui/main_window.py:424
 msgid "Projected"
 msgstr "予測"
 
-#: regeste/gui/main_window.py:417
+#: regeste/gui/main_window.py:427
 msgid "Range (min/max per file)"
 msgstr "範囲(ファイルごとの最小/最大)"
 
-#: regeste/gui/main_window.py:431
+#: regeste/gui/main_window.py:441
 msgid "Select the source folder"
 msgstr "元フォルダを選択"
 
-#: regeste/gui/main_window.py:436
+#: regeste/gui/main_window.py:446
 msgid "Select the output folder"
 msgstr "出力フォルダを選択"
 
-#: regeste/gui/main_window.py:478
+#: regeste/gui/main_window.py:488
 msgid "New project"
 msgstr "新規プロジェクト"
 
-#: regeste/gui/main_window.py:479 regeste/gui/main_window.py:510
-msgid ""
-"Please wait for the current operation to finish before changing project."
+#: regeste/gui/main_window.py:489 regeste/gui/main_window.py:520
+msgid "Please wait for the current operation to finish before changing project."
 msgstr "プロジェクトを切り替える前に、現在の処理が終わるまでお待ちください。"
 
-#: regeste/gui/main_window.py:482 regeste/gui/main_window.py:513
+#: regeste/gui/main_window.py:492 regeste/gui/main_window.py:523
 msgid "Select the project folder"
 msgstr "プロジェクトフォルダを選択"
 
-#: regeste/gui/main_window.py:502
+#: regeste/gui/main_window.py:512
 #, python-brace-format
 msgid "New project created in {path}"
 msgstr "{path} に新規プロジェクトを作成しました"
 
-#: regeste/gui/main_window.py:509
+#: regeste/gui/main_window.py:519
 msgid "Open project"
 msgstr "プロジェクトを開く"
 
-#: regeste/gui/main_window.py:520 regeste/gui/main_window.py:623
-#: regeste/gui/main_window.py:718 regeste/gui/main_window.py:770
-#: regeste/gui/main_window.py:1039 regeste/gui/main_window.py:1043
-#: regeste/gui/main_window.py:1052 regeste/gui/main_window.py:1092
-#: regeste/gui/main_window.py:1098 regeste/gui/panels/review_panel.py:370
+#: regeste/gui/main_window.py:530 regeste/gui/main_window.py:633
+#: regeste/gui/main_window.py:728 regeste/gui/main_window.py:780
+#: regeste/gui/main_window.py:1060 regeste/gui/main_window.py:1064
+#: regeste/gui/main_window.py:1073 regeste/gui/main_window.py:1113
+#: regeste/gui/main_window.py:1119 regeste/gui/panels/review_panel.py:370
 #: regeste/gui/panels/review_panel.py:415
-#: regeste/gui/panels/translation_panel.py:275
+#: regeste/gui/panels/translation_panel.py:283
 msgid "Error"
 msgstr "エラー"
 
-#: regeste/gui/main_window.py:520 regeste/gui/main_window.py:1052
+#: regeste/gui/main_window.py:530 regeste/gui/main_window.py:1073
 msgid "No existing project found in this folder to resume."
 msgstr "このフォルダには再開できる既存のプロジェクトが見つかりません。"
 
-#: regeste/gui/main_window.py:531
+#: regeste/gui/main_window.py:541
 #, python-brace-format
 msgid "Project loaded from {path}"
 msgstr "{path} からプロジェクトを読み込みました"
 
-#: regeste/gui/main_window.py:539
+#: regeste/gui/main_window.py:549
 msgid "Project saved."
 msgstr "プロジェクトを保存しました。"
 
-#: regeste/gui/main_window.py:546 regeste/gui/main_window.py:552
-#: regeste/gui/main_window.py:642 regeste/gui/panels/export_panel.py:107
+#: regeste/gui/main_window.py:556 regeste/gui/main_window.py:562
+#: regeste/gui/main_window.py:652 regeste/gui/panels/export_panel.py:107
 #: regeste/gui/panels/export_panel.py:151
 #: regeste/gui/panels/export_panel.py:156
 #: regeste/gui/panels/export_panel.py:180
 msgid "Export"
 msgstr "エクスポート"
 
-#: regeste/gui/main_window.py:546
+#: regeste/gui/main_window.py:556
 msgid "Open a project folder before exporting."
 msgstr "エクスポートする前にプロジェクトフォルダを開いてください。"
 
-#: regeste/gui/main_window.py:553
+#: regeste/gui/main_window.py:563
 msgid "Please wait for the current operation to finish before exporting."
 msgstr "エクスポートする前に、現在の処理が終わるまでお待ちください。"
 
-#: regeste/gui/main_window.py:616 regeste/gui/panels/export_panel.py:208
+#: regeste/gui/main_window.py:626 regeste/gui/panels/export_panel.py:208
 #: regeste/gui/panels/export_panel.py:209
 msgid "Export complete."
 msgstr "エクスポートが完了しました。"
 
-#: regeste/gui/main_window.py:643
+#: regeste/gui/main_window.py:653
 #, python-brace-format
 msgid ""
 "Export complete. Files written:\n"
@@ -646,92 +653,88 @@ msgstr ""
 "エクスポート完了。書き込まれたファイル:\n"
 "{files}"
 
-#: regeste/gui/main_window.py:651
+#: regeste/gui/main_window.py:661
 msgid "Open a project folder before importing a batch."
 msgstr "バッチをインポートする前にプロジェクトフォルダを開いてください。"
 
-#: regeste/gui/main_window.py:661
+#: regeste/gui/main_window.py:671
 msgid "No image files found in this folder."
 msgstr "このフォルダには再開できる既存のプロジェクトが見つかりません。"
 
-#: regeste/gui/main_window.py:666
+#: regeste/gui/main_window.py:676
 #, python-brace-format
 msgid "Import: {count} image(s) from {folder} as batch \"{batch_id}\""
 msgstr "インポート: {folder}から{count}個の画像をバッチ「{batch_id}」として"
 
-#: regeste/gui/main_window.py:698
+#: regeste/gui/main_window.py:708
 #, python-brace-format
 msgid "Import complete: {count} new file(s) in batch \"{batch_id}\"."
 msgstr "インポート完了: バッチ「{batch_id}」に{count}個の新しいファイル。"
 
-#: regeste/gui/main_window.py:705
+#: regeste/gui/main_window.py:715
 #, python-brace-format
 msgid "{count} new file(s) imported as batch \"{batch_id}\"."
-msgstr ""
-"{count}個の新しいファイルがバッチ「{batch_id}」としてインポートされました。"
+msgstr "{count}個の新しいファイルがバッチ「{batch_id}」としてインポートされました。"
 
-#: regeste/gui/main_window.py:716 regeste/gui/main_window.py:718
+#: regeste/gui/main_window.py:726 regeste/gui/main_window.py:728
 #, python-brace-format
 msgid "Import failed: {error}"
 msgstr "エクスポートに失敗しました：{error}"
 
-#: regeste/gui/main_window.py:734 regeste/gui/main_window.py:739
-#: regeste/gui/main_window.py:762
+#: regeste/gui/main_window.py:744 regeste/gui/main_window.py:749
+#: regeste/gui/main_window.py:772
 msgid "Export project archive"
 msgstr "プロジェクトアーカイブをエクスポート"
 
-#: regeste/gui/main_window.py:734
+#: regeste/gui/main_window.py:744
 msgid "Open a project folder before exporting an archive."
 msgstr "アーカイブをエクスポートする前にプロジェクトフォルダを開いてください。"
 
-#: regeste/gui/main_window.py:759 regeste/gui/main_window.py:763
+#: regeste/gui/main_window.py:769 regeste/gui/main_window.py:773
 #, python-brace-format
 msgid "Project archive written to {path}"
 msgstr "プロジェクトアーカイブを {path} に書き込みました"
 
-#: regeste/gui/main_window.py:768 regeste/gui/main_window.py:770
+#: regeste/gui/main_window.py:778 regeste/gui/main_window.py:780
 #, python-brace-format
 msgid "Project archive export failed: {error}"
 msgstr "プロジェクトアーカイブのエクスポートに失敗しました：{error}"
 
-#: regeste/gui/main_window.py:903 regeste/gui/panels/settings_panel.py:603
+#: regeste/gui/main_window.py:917 regeste/gui/panels/settings_panel.py:621
 msgid "Interface language"
 msgstr "インターフェース言語"
 
-#: regeste/gui/main_window.py:904
-msgid ""
-"Please wait for the current operation to finish before switching language."
+#: regeste/gui/main_window.py:918
+msgid "Please wait for the current operation to finish before switching language."
 msgstr "言語を切り替える前に、現在の処理が完了するまでお待ちください。"
 
-#: regeste/gui/main_window.py:1039
+#: regeste/gui/main_window.py:1060
 msgid "Choose a source folder first."
 msgstr "先に元フォルダを選択してください。"
 
-#: regeste/gui/main_window.py:1121
+#: regeste/gui/main_window.py:1142
 #, python-brace-format
 msgid "Starting: {count} file(s), provider={provider}, model={model}"
 msgstr "開始: {count} ファイル, プロバイダー={provider}, モデル={model}"
 
-#: regeste/gui/main_window.py:1171
+#: regeste/gui/main_window.py:1192
 #, python-brace-format
 msgid ""
 "{file} - done (model={model}, tokens_in={tin}, tokens_out={tout}, "
 "cost={cost})"
-msgstr ""
-"{file} - 完了 (モデル={model}, tokens_in={tin}, tokens_out={tout}, コスト"
-"={cost})"
+msgstr "{file} - 完了 (モデル={model}, tokens_in={tin}, tokens_out={tout}, コスト={cost})"
 
-#: regeste/gui/main_window.py:1213
+#: regeste/gui/main_window.py:1239
 #, python-brace-format
 msgid "Run failed: {error}"
 msgstr "実行に失敗しました: {error}"
 
-#: regeste/gui/main_window.py:1240
+#: regeste/gui/main_window.py:1266
 #, python-brace-format
 msgid "{done} / {total} - processing: {current}"
 msgstr "{done} / {total} - 処理中: {current}"
 
-#: regeste/gui/main_window.py:1250
+#: regeste/gui/main_window.py:1276
 #, python-brace-format
 msgid "{file} - starting"
 msgstr "{file} - 開始"
@@ -793,7 +796,7 @@ msgid "Destination folder"
 msgstr "保存先フォルダー"
 
 #: regeste/gui/panels/export_panel.py:92
-#: regeste/gui/panels/translation_panel.py:100
+#: regeste/gui/panels/translation_panel.py:103
 msgid "Validated pieces only"
 msgstr "検証済み資料のみ"
 
@@ -827,11 +830,9 @@ msgstr "詳細モード"
 
 #: regeste/gui/panels/log_panel.py:62
 msgid ""
-"Show exhaustive diagnostic logs (provider calls, image processing, registry "
-"writes) — useful when troubleshooting an issue."
-msgstr ""
-"詳細な診断ログ（プロバイダー呼び出し、画像処理、レジストリ書き込み）を表示し"
-"ます — 問題の切り分けに役立ちます。"
+"Show exhaustive diagnostic logs (provider calls, image processing, "
+"registry writes) — useful when troubleshooting an issue."
+msgstr "詳細な診断ログ（プロバイダー呼び出し、画像処理、レジストリ書き込み）を表示します — 問題の切り分けに役立ちます。"
 
 #: regeste/gui/panels/log_panel.py:73
 msgid "Search in logs..."
@@ -928,6 +929,7 @@ msgstr "画像を表示"
 
 #: regeste/gui/panels/review_panel.py:194
 #: regeste/gui/panels/settings_panel.py:492
+#: regeste/gui/panels/settings_panel.py:512
 msgid "Advanced"
 msgstr "詳細設定"
 
@@ -1077,12 +1079,12 @@ msgid "Output $/M tokens"
 msgstr "出力 $/100万トークン"
 
 #: regeste/gui/panels/settings_panel.py:459
-#: regeste/gui/panels/translation_panel.py:117
+#: regeste/gui/panels/translation_panel.py:120
 msgid "Add row"
 msgstr "行を追加"
 
 #: regeste/gui/panels/settings_panel.py:461
-#: regeste/gui/panels/translation_panel.py:119
+#: regeste/gui/panels/translation_panel.py:122
 msgid "Remove selected row"
 msgstr "選択した行を削除"
 
@@ -1090,118 +1092,127 @@ msgstr "選択した行を削除"
 msgid "Enable spend ceiling"
 msgstr "支出上限を有効にする"
 
-#: regeste/gui/panels/settings_panel.py:511
-#: regeste/gui/panels/settings_panel.py:525
+#: regeste/gui/panels/settings_panel.py:514
+msgid "Translate several pieces in parallel"
+msgstr "複数の資料を並列に翻訳"
+
+#: regeste/gui/panels/settings_panel.py:517
+msgid ""
+"Off by default: translation providers are more likely to rate-limit than "
+"vision providers under concurrent load. Uses the same worker count as OCR"
+" (OCR sub-tab)."
+msgstr ""
+"デフォルトでは無効: "
+"翻訳プロバイダーは、同時実行の負荷下でビジョンプロバイダーよりレート制限にかかりやすい傾向があります。OCRと同じワーカー数を使用します(OCRサブタブ)。"
+
+#: regeste/gui/panels/settings_panel.py:526
+#: regeste/gui/panels/settings_panel.py:540
 msgid "Translation prompt"
 msgstr "翻訳プロンプト"
 
-#: regeste/gui/panels/settings_panel.py:514
+#: regeste/gui/panels/settings_panel.py:529
 msgid "Edit translation prompt..."
 msgstr "翻訳プロンプトを編集..."
 
-#: regeste/gui/panels/settings_panel.py:532
-#: regeste/gui/panels/translation_panel.py:217
+#: regeste/gui/panels/settings_panel.py:547
+#: regeste/gui/panels/translation_panel.py:224
 #, python-brace-format
 msgid ""
 "Removing {entites_a_preserver} or {glossaire} disables the injection of "
 "named entities and the glossary into the prompt."
-msgstr ""
-"{entites_a_preserver} または {glossaire} を削除すると、固有表現と用語集のプロ"
-"ンプトへの挿入が無効になります。"
+msgstr "{entites_a_preserver} または {glossaire} を削除すると、固有表現と用語集のプロンプトへの挿入が無効になります。"
 
-#: regeste/gui/panels/settings_panel.py:541
+#: regeste/gui/panels/settings_panel.py:556
 msgid "Translation model"
 msgstr "翻訳モデル"
 
-#: regeste/gui/panels/settings_panel.py:543
+#: regeste/gui/panels/settings_panel.py:558
 msgid "Use the same model for translation"
 msgstr "翻訳に同じモデルを使用"
 
-#: regeste/gui/panels/settings_panel.py:611
+#: regeste/gui/panels/settings_panel.py:629
 msgid "Applies immediately when you click Save settings - no restart needed."
 msgstr "「設定を保存」をクリックするとすぐに適用されます - 再起動は不要です。"
 
-#: regeste/gui/panels/settings_panel.py:626
+#: regeste/gui/panels/settings_panel.py:644
 msgid ""
 "No cost data available yet - run a transcription or open a project with "
 "processed files."
-msgstr ""
-"コストデータはまだありません — 文字起こしを実行するか、処理済みファイルのある"
-"プロジェクトを開いてください。"
+msgstr "コストデータはまだありません — 文字起こしを実行するか、処理済みファイルのあるプロジェクトを開いてください。"
 
-#: regeste/gui/panels/settings_panel.py:634
-#: regeste/gui/panels/settings_panel.py:680
+#: regeste/gui/panels/settings_panel.py:652
+#: regeste/gui/panels/settings_panel.py:698
 msgid "Spending"
 msgstr "支出"
 
-#: regeste/gui/panels/settings_panel.py:678
+#: regeste/gui/panels/settings_panel.py:696
 #, python-brace-format
 msgid "Spending ({provider})"
 msgstr "支出（{provider}）"
 
-#: regeste/gui/panels/settings_panel.py:686
+#: regeste/gui/panels/settings_panel.py:704
 #, python-brace-format
 msgid "Spent: {spent} (no ceiling)"
 msgstr "支出: {spent}（上限なし）"
 
-#: regeste/gui/panels/settings_panel.py:694
+#: regeste/gui/panels/settings_panel.py:712
 #, python-brace-format
 msgid "Spent: {spent} / {ceiling} (ceiling)"
 msgstr "支出: {spent} / {ceiling}（上限）"
 
-#: regeste/gui/panels/translation_panel.py:92
+#: regeste/gui/panels/translation_panel.py:95
 msgid "Corpus translation"
 msgstr "コーパス翻訳"
 
-#: regeste/gui/panels/translation_panel.py:94
+#: regeste/gui/panels/translation_panel.py:97
 msgid "Target language"
 msgstr "対象言語"
 
-#: regeste/gui/panels/translation_panel.py:102
+#: regeste/gui/panels/translation_panel.py:105
 msgid "All pieces"
 msgstr "すべての資料"
 
-#: regeste/gui/panels/translation_panel.py:106
+#: regeste/gui/panels/translation_panel.py:109
 msgid "Launch translation"
 msgstr "翻訳を開始"
 
-#: regeste/gui/panels/translation_panel.py:111
+#: regeste/gui/panels/translation_panel.py:114
 msgid "Corpus glossary"
 msgstr "コーパス用語集"
 
-#: regeste/gui/panels/translation_panel.py:114
+#: regeste/gui/panels/translation_panel.py:117
 msgid "Term"
 msgstr "用語"
 
-#: regeste/gui/panels/translation_panel.py:121
+#: regeste/gui/panels/translation_panel.py:124
 msgid "Save glossary"
 msgstr "用語集を保存"
 
-#: regeste/gui/panels/translation_panel.py:194
+#: regeste/gui/panels/translation_panel.py:201
 msgid "Glossary"
 msgstr "用語集"
 
-#: regeste/gui/panels/translation_panel.py:194
+#: regeste/gui/panels/translation_panel.py:201
 msgid "Glossary saved."
 msgstr "用語集を保存しました。"
 
-#: regeste/gui/panels/translation_panel.py:215
+#: regeste/gui/panels/translation_panel.py:222
 msgid "Warning"
 msgstr "警告"
 
-#: regeste/gui/panels/translation_panel.py:221
+#: regeste/gui/panels/translation_panel.py:228
 msgid "Continue anyway?"
 msgstr "それでも続行しますか？"
 
-#: regeste/gui/panels/translation_panel.py:231
+#: regeste/gui/panels/translation_panel.py:238
 msgid "No piece matches the selected scope."
 msgstr "選択した範囲に一致する資料がありません。"
 
-#: regeste/gui/panels/translation_panel.py:236
+#: regeste/gui/panels/translation_panel.py:243
 msgid "Translation failed"
 msgstr "翻訳に失敗しました"
 
-#: regeste/gui/panels/translation_panel.py:278
+#: regeste/gui/panels/translation_panel.py:286
 #, python-brace-format
 msgid "Translation complete: {ok} succeeded, {failed} failed."
 msgstr "翻訳完了: 成功 {ok} 件、失敗 {failed} 件。"
@@ -1225,18 +1236,16 @@ msgstr "OCR の信頼度が低いです。"
 #~ msgstr "OCRプロンプト"
 
 #~ msgid ""
-#~ "The interface language has been saved ({language}). Restart Regeste for "
-#~ "the change to fully apply everywhere."
-#~ msgstr ""
-#~ "インターフェース言語を保存しました({language})。変更をすべての箇所に反映す"
-#~ "るには、Regesteを再起動してください。"
+#~ "The interface language has been saved"
+#~ " ({language}). Restart Regeste for the "
+#~ "change to fully apply everywhere."
+#~ msgstr "インターフェース言語を保存しました({language})。変更をすべての箇所に反映するには、Regesteを再起動してください。"
 
 #~ msgid ""
-#~ "Restarting the application is required for the new language to fully "
+#~ "Restarting the application is required "
+#~ "for the new language to fully "
 #~ "apply everywhere."
-#~ msgstr ""
-#~ "新しい言語をすべての箇所に反映するには、アプリケーションの再起動が必要で"
-#~ "す。"
+#~ msgstr "新しい言語をすべての箇所に反映するには、アプリケーションの再起動が必要です。"
 
 #~ msgid "Respond in the following language: {lang}"
 #~ msgstr "次の言語で回答してください: {lang}"
@@ -1282,3 +1291,4 @@ msgstr "OCR の信頼度が低いです。"
 
 #~ msgid "Archival formats"
 #~ msgstr "アーカイブ形式（カンマ区切り）"
+
