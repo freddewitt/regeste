@@ -22,14 +22,17 @@ def augment_prompt(prompt: str, forced_language: str | None = None) -> str:
     return prompt + "\n\n" + "Respond in the following language: {lang}".format(lang=forced_language)
 
 
+# Accepts both "LANGUAGE" (current default prompt) and "LANGUE" (legacy default
+# prompt / user-edited prompts saved before the English switch) - both map to
+# the same "language" field so old projects/custom prompts keep working.
 _SECTION_RE = re.compile(
-    r"##\s*(TEXT|DESCRIPTION|LANGUE)\s*\n(.*?)(?=\n##\s*(?:TEXT|DESCRIPTION|LANGUE)\s*\n|\Z)",
+    r"##\s*(TEXT|DESCRIPTION|LANGUAGE|LANGUE)\s*\n(.*?)(?=\n##\s*(?:TEXT|DESCRIPTION|LANGUAGE|LANGUE)\s*\n|\Z)",
     re.IGNORECASE | re.DOTALL,
 )
 
 
 def parse_all(raw: str) -> tuple[str, str, str]:
-    """Single-pass extraction of `## TEXT`, `## DESCRIPTION` and `## LANGUE` sections.
+    """Single-pass extraction of `## TEXT`, `## DESCRIPTION` and `## LANGUAGE` sections.
 
     Returns ``(text, description, language)`` — each empty string if the
     corresponding section is absent.  Callers that need all three fields should
@@ -38,10 +41,12 @@ def parse_all(raw: str) -> tuple[str, str, str]:
     """
     sections: dict[str, str] = {}
     for m in _SECTION_RE.finditer(raw):
-        sections[m.group(1).upper()] = m.group(2).strip()
+        key = m.group(1).upper()
+        key = "LANGUAGE" if key == "LANGUE" else key
+        sections[key] = m.group(2).strip()
     if not sections:
         return raw.strip(), "", ""
-    return sections.get("TEXT", ""), sections.get("DESCRIPTION", ""), sections.get("LANGUE", "")
+    return sections.get("TEXT", ""), sections.get("DESCRIPTION", ""), sections.get("LANGUAGE", "")
 
 
 def parse_text_description(raw: str) -> tuple[str, str]:
@@ -57,7 +62,7 @@ def parse_text_description(raw: str) -> tuple[str, str]:
 
 
 def parse_language(raw: str) -> str:
-    """Return the `## LANGUE` section (detected document language), or "" if absent.
+    """Return the `## LANGUAGE` section (detected document language), or "" if absent.
 
     Optional section of the same output contract: a model that omits it (or an
     older prompt without it) simply yields "".

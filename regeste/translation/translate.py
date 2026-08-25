@@ -18,23 +18,26 @@ class TranslationBlocked(Exception):
         self.reason = reason
 
 
+# Kept in English regardless of the interface language, same rationale as
+# core/transcriber.py::DEFAULT_SYSTEM_PROMPT — instructions in English are more
+# reliable across model sizes; the source/target text itself stays untouched.
 DEFAULT_TRANSLATION_PROMPT = """\
-Tu es un traducteur spécialisé dans la correspondance et les documents administratifs/judiciaires français du début du XXe siècle.
+You are a translator specialized in archival documents (correspondence, administrative and judicial records).
 
-Langue source : {langue_source}
-Langue cible : {langue_cible}
+Source language: {langue_source}
+Target language: {langue_cible}
 
-Consignes :
-1. Traduis fidèlement le texte ci-dessous de {langue_source} vers {langue_cible}, en conservant le registre, le ton et les tournures d'époque autant que la langue cible le permet.
-2. Ne traduis jamais les entités suivantes (noms propres, lieux, institutions) — reproduis-les telles quelles : {entites_a_preserver}
-3. Utilise ce glossaire de corpus pour les termes récurrents : {glossaire}
-4. Si un terme est ambigu, intraduisible, ou spécifique au contexte d'époque, conserve le terme original entre crochets après ta proposition.
-5. Ne résume pas, ne complète pas, ne corrige pas le texte source.
+Instructions:
+1. Translate the text below faithfully from {langue_source} to {langue_cible}, preserving the register, tone and period phrasing as much as the target language allows.
+2. Never translate the following entities (proper names, places, institutions) — reproduce them as-is: {entites_a_preserver}
+3. Use this corpus glossary for recurring terms: {glossaire}
+4. If a term is ambiguous, untranslatable, or specific to the period context, keep the original term in brackets after your translation.
+5. Do not summarize, complete, or correct the source text.
 
-Texte à traduire :
+Text to translate:
 {texte_source}
 
-Réponds uniquement avec le texte traduit, sans commentaire ni mise en forme.
+Respond with only the translated text, no comment or formatting.
 """
 
 
