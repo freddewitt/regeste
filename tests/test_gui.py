@@ -790,3 +790,39 @@ def test_fetch_models_runs_in_a_thread_and_populates_the_combo(qtbot, monkeypatc
     # waitUntil polls rather than awaiting the signal directly: the worker can complete
     # (and emit) before this test gets a chance to attach a waitSignal listener.
     qtbot.waitUntil(lambda: panel.model_combo.count() == 1, timeout=5000)
+
+
+class _FakeModelProvider:
+    def __init__(self, ids):
+        self._ids = ids
+
+    def list_vision_models(self):
+        return [ModelInfo(id=i, display_name=i, requires_api_key=False) for i in self._ids]
+
+
+def _click_fetch(qtbot, panel, monkeypatch, ids):
+    monkeypatch.setattr(
+        "regeste.gui.worker.create_provider", lambda config: _FakeModelProvider(ids)
+    )
+    panel.fetch_models_button.click()
+    qtbot.waitUntil(lambda: panel.fetch_models_button.isEnabled(), timeout=5000)
+
+
+def test_fetch_models_button_keeps_selected_model_when_still_available(qtbot, monkeypatch):
+    panel = SettingsPanel()
+    qtbot.addWidget(panel)
+    panel.provider_combo.setCurrentText("lm_studio")
+    panel.model_combo.setCurrentText("model-b")
+    _click_fetch(qtbot, panel, monkeypatch, ["model-a", "model-b"])
+    assert panel.model_combo.currentData() == "model-b"
+    assert panel.fetch_status_label.text() == ""
+
+
+def test_fetch_models_button_warns_when_selected_model_disappeared(qtbot, monkeypatch):
+    panel = SettingsPanel()
+    qtbot.addWidget(panel)
+    panel.provider_combo.setCurrentText("lm_studio")
+    panel.model_combo.setCurrentText("old-model")
+    _click_fetch(qtbot, panel, monkeypatch, ["model-a"])
+    assert panel.model_combo.count() == 1
+    assert "old-model" in panel.fetch_status_label.text()

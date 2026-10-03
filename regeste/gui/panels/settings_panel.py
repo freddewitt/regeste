@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QProgressBar,
     QPushButton,
+    QSizePolicy,
     QSpinBox,
     QTabWidget,
     QTableWidget,
@@ -287,15 +288,16 @@ class SettingsPanel(QWidget):
         layout.addWidget(self.api_key_edit, row, 1)
         row += 1
 
-        self.fetch_models_button = QPushButton(_("Fetch models"))
-        self.fetch_models_button.clicked.connect(self._on_fetch_models_clicked)
-        layout.addWidget(self.fetch_models_button, row, 0, 1, 2)
-        row += 1
-
         layout.addWidget(QLabel(_("Model")), row, 0)
+        model_row = QHBoxLayout()
         self.model_combo = QComboBox()
         self.model_combo.setEditable(True)
-        layout.addWidget(self.model_combo, row, 1)
+        self.model_combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        model_row.addWidget(self.model_combo, 1)
+        self.fetch_models_button = QPushButton(_("Fetch models"))
+        self.fetch_models_button.clicked.connect(self._on_fetch_models_clicked)
+        model_row.addWidget(self.fetch_models_button)
+        layout.addLayout(model_row, row, 1)
         row += 1
 
         # LM Studio/llama.cpp only (spec §2.3): manual "force this model" override,
@@ -368,9 +370,19 @@ class SettingsPanel(QWidget):
             self.fetch_status_label.setText(_("No vision model found for this provider."))
             return
         self.fetch_status_label.setText("")
+        previous = self.model_combo.currentData() or self.model_combo.currentText().strip()
         self.model_combo.clear()
         for model in models:
             self.model_combo.addItem(f"{model.display_name} ({model.id})", model.id)
+        if not previous:
+            return
+        index = self.model_combo.findData(previous)
+        if index >= 0:
+            self.model_combo.setCurrentIndex(index)
+        else:
+            self.fetch_status_label.setText(
+                _("The previously selected model '{model}' is no longer available.").format(model=previous)
+            )
 
     def _on_models_fetch_failed(self, message: str) -> None:
         self.fetch_models_button.setEnabled(True)
