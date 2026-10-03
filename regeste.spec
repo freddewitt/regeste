@@ -13,6 +13,7 @@ from PyInstaller.utils.hooks import (
     collect_data_files,
     collect_dynamic_libs,
     collect_submodules,
+    copy_metadata,
 )
 
 block_cipher = None
@@ -33,6 +34,9 @@ datas = [
 # reportlab ships its own font/data resources (AFM metrics, etc.) needed to
 # generate searchable PDFs.
 datas += collect_data_files("reportlab")
+
+# keyring discovers its OS backends through package entry points (metadata).
+datas += copy_metadata("keyring")
 
 # --- Native libraries -----------------------------------------------------
 # pillow-heif bundles its own libheif/libde265/libx265 dynamic libraries as
@@ -55,6 +59,7 @@ hiddenimports += collect_submodules("anthropic")
 hiddenimports += collect_submodules("openai")
 hiddenimports += collect_submodules("pydantic")
 hiddenimports += collect_submodules("cv2")
+hiddenimports += collect_submodules("keyring")
 
 a = Analysis(
     ["regeste/__main__.py"],

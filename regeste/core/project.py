@@ -12,6 +12,7 @@ from typing import Any
 
 from .costs import DEFAULT_RATES, Rate
 from .export import ExportOptions
+from .secrets import load_api_key, store_api_key
 from .imaging import PreprocessOptions, ResizeOptions
 from .transcription_mode import TranscriptionMode
 
@@ -21,7 +22,22 @@ class ProviderConfig:
     kind: str  # "claude" | "gemini" | "openai" | "lm_studio" | "llama_cpp" | "ollama"
     model: str
     base_url: str | None = None
-    api_key: str | None = None  # stored in clear, explicitly accepted (spec §2.4)
+    api_key: str | None = None  # in memory only: persisted in the OS keychain, not in regeste.json
+
+    def to_meta(self) -> dict[str, Any]:
+        """Serialize without the key, which goes to the keychain instead."""
+        store_api_key(self.kind, self.base_url, self.api_key)
+        return {**asdict(self), "api_key": None}
+
+    @classmethod
+    def from_meta(cls, raw: dict[str, Any]) -> "ProviderConfig":
+        """Rebuild from stored data; a legacy clear-text key is moved to the keychain."""
+        config = cls(**raw)
+        if config.api_key:
+            store_api_key(config.kind, config.base_url, config.api_key)
+        else:
+            config.api_key = load_api_key(config.kind, config.base_url)
+        return config
 
 
 @dataclass
@@ -69,7 +85,7 @@ class ProjectConfig:
             "project_name": self.project_name,
             "source_dir": str(self.source_dir),
             "output_dir": str(self.output_dir),
-            "provider": asdict(self.provider),
+            "provider": self.provider.to_meta(),
             "preprocessing": asdict(self.preprocessing),
             "resize": asdict(self.resize),
             "forced_language": self.forced_language,
@@ -86,7 +102,7 @@ class ProjectConfig:
             "workers": self.workers,
             "ui_language": self.ui_language,
             "translation_provider": (
-                asdict(self.translation_provider) if self.translation_provider else None
+                self.translation_provider.to_meta() if self.translation_provider else None
             ),
             "translation_same_as_ocr": self.translation_same_as_ocr,
             "translation_prompt": self.translation_prompt,
@@ -103,7 +119,7 @@ class ProjectConfig:
             project_name=meta["project_name"],
             source_dir=Path(meta["source_dir"]),
             output_dir=Path(meta["output_dir"]),
-            provider=ProviderConfig(**meta["provider"]),
+            provider=ProviderConfig.from_meta(meta["provider"]),
             preprocessing=PreprocessOptions(**meta.get("preprocessing", {})),
             resize=ResizeOptions(**meta.get("resize", {})),
             forced_language=meta.get("forced_language"),
@@ -128,7 +144,7 @@ class ProjectConfig:
             workers=meta.get("workers", 4),
             ui_language=meta.get("ui_language"),
             translation_provider=(
-                ProviderConfig(**raw_tp) if (raw_tp := meta.get("translation_provider")) else None
+                ProviderConfig.from_meta(raw_tp) if (raw_tp := meta.get("translation_provider")) else None
             ),
             translation_same_as_ocr=meta.get("translation_same_as_ocr", True),
             translation_prompt=meta.get("translation_prompt"),

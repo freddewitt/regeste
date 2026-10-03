@@ -34,3 +34,26 @@ def _reset_i18n_state(monkeypatch):
     monkeypatch.setattr(i18n, "_current_language", None)
     i18n.set_language("en")
     yield
+
+
+class _MemoryKeyring:
+    """In-memory stand-in for the OS keychain: tests never touch the real one."""
+
+    def __init__(self):
+        self.store: dict[tuple[str, str], str] = {}
+
+    def set_password(self, service, account, password):
+        self.store[(service, account)] = password
+
+    def get_password(self, service, account):
+        return self.store.get((service, account))
+
+
+@pytest.fixture(autouse=True)
+def memory_keyring(monkeypatch):
+    import keyring
+
+    fake = _MemoryKeyring()
+    monkeypatch.setattr(keyring, "set_password", fake.set_password)
+    monkeypatch.setattr(keyring, "get_password", fake.get_password)
+    return fake
