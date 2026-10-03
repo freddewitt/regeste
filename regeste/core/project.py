@@ -78,6 +78,12 @@ class ProjectConfig:
     # `output_dir` as soon as it's transcribed (no waiting for manual review),
     # and the app doesn't auto-switch to the Review tab once the run finishes.
     no_review: bool = False
+    # Chat tab (RAG over the corpus): own model, defaulting to the OCR one.
+    chat_provider: ProviderConfig | None = None
+    chat_same_as_ocr: bool = True
+    chat_same_as_translation: bool = False
+    chat_prompt: str | None = None  # None = DEFAULT_CHAT_PROMPT
+    chat_top_k: int = 8
 
     def to_meta(self) -> dict[str, Any]:
         """Serialize for storage in `Registry.meta` (regeste.json)."""
@@ -108,6 +114,11 @@ class ProjectConfig:
             "translation_prompt": self.translation_prompt,
             "translation_parallel": self.translation_parallel,
             "no_review": self.no_review,
+            "chat_provider": self.chat_provider.to_meta() if self.chat_provider else None,
+            "chat_same_as_ocr": self.chat_same_as_ocr,
+            "chat_same_as_translation": self.chat_same_as_translation,
+            "chat_prompt": self.chat_prompt,
+            "chat_top_k": self.chat_top_k,
         }
 
     @classmethod
@@ -150,4 +161,11 @@ class ProjectConfig:
             translation_prompt=meta.get("translation_prompt"),
             translation_parallel=meta.get("translation_parallel", False),
             no_review=meta.get("no_review", False),
+            chat_provider=(
+                ProviderConfig.from_meta(raw_cp) if (raw_cp := meta.get("chat_provider")) else None
+            ),
+            chat_same_as_ocr=meta.get("chat_same_as_ocr", True),
+            chat_same_as_translation=meta.get("chat_same_as_translation", False),
+            chat_prompt=meta.get("chat_prompt"),
+            chat_top_k=meta.get("chat_top_k", 8),
         )

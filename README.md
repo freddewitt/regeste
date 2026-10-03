@@ -37,6 +37,11 @@ Built for work on archival record groups (for example the *3 U 794 "Le Corbeau"*
 - **Corpus glossary** and validated **named entities** re-injected into every translation for consistent terminology.
 - **Auto-detected source language** (from OCR), editable by hand.
 
+### Chat (graphical interface)
+- Ask questions about the corpus; answers are drawn from the most relevant passages.
+- **Dedicated chat model**: the same as OCR, the same as translation, or a separate model (cloud or local providers).
+- Editable chat instruction and number of passages retrieved.
+
 ### Exports
 - **4 base formats**: Markdown, plain text, JSON, and **searchable PDF** (real selectable text / Ctrl+F), as a combined file and/or one file per image.
 - **12 archival formats** built from the pivot model: **EAD (XML), Dublin Core (XML), METS/PREMIS, light/full CSV, XLSX, SQLite, HTML, ZIP, Markdown (Obsidian), consultation PDF**, and a **review journal**.

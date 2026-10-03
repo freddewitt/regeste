@@ -105,15 +105,16 @@ def test_translation_batch_worker_parallel_translates_every_piece(qtbot, tmp_pat
         assert load_piece(source_dir, piece.id).translations["en"].text == "Translated."
 
 
-def test_main_window_has_six_tabs(qtbot):
+def test_main_window_has_seven_tabs(qtbot):
     window = MainWindow()
     qtbot.addWidget(window)
     tabs = window.tabs
-    assert tabs.count() == 6
-    assert [tabs.tabText(i) for i in range(6)] == [
+    assert tabs.count() == 7
+    assert [tabs.tabText(i) for i in range(7)] == [
         "Transcription",
         "Review",
         "Translation",
+        "Chat",
         "Export archive",
         "Settings",
         "Log",
@@ -866,7 +867,7 @@ def test_settings_panel_has_costs_subtab(qtbot):
     panel = SettingsPanel()
     qtbot.addWidget(panel)
     labels = [panel._sub_tabs.tabText(i) for i in range(panel._sub_tabs.count())]
-    assert labels == ["OCR", "Translation", "General", "Costs"]
+    assert labels == ["OCR", "Translation", "Chat", "General", "Costs"]
 
 
 def test_costs_tab_empty_state_without_registry(qtbot):
@@ -1055,3 +1056,48 @@ def test_review_expert_tools_hidden_until_opened(qtbot, tmp_path):
     assert panel.bulk_group.isHidden()
     panel.tools_button.setChecked(True)
     assert not panel.bulk_group.isHidden()
+
+
+def test_chat_panel_sends_question_and_shows_sources(qtbot):
+    from regeste.gui.panels import ChatPanel
+    from regeste.pivot import Piece
+    from regeste.translation.provider import TranslationProvider, TranslationResult
+    from regeste.core.project import ProviderConfig
+    import regeste.gui.panels.chat_panel as chat_panel
+
+    class Fake(TranslationProvider):
+        name = "fake"
+        requires_api_key = False
+
+        def translate(self, prompt, *, model):
+            return TranslationResult("Voici [1]", 5, 2, model)
+
+    panel = ChatPanel()
+    qtbot.addWidget(panel)
+    assert not panel.send_button.isEnabled()  # no corpus yet
+    panel.refresh([Piece(id="a", call_number="AD-1", transcription="le blé de Rouen")])
+    panel.set_chat_config(ProviderConfig(kind="ollama", model="m"), None, 4)
+    original = chat_panel.create_translation_provider
+    chat_panel.create_translation_provider = lambda *a, **k: Fake()
+    try:
+        panel.input_edit.setText("blé")
+        panel._on_send()
+        qtbot.waitUntil(lambda: not panel.is_busy(), timeout=3000)
+    finally:
+        chat_panel.create_translation_provider = original
+    assert "Voici [1]" in panel.transcript.toPlainText()
+    assert panel.sources_list.count() == 1 and "AD-1" in panel.sources_list.item(0).text()
+    panel._add_sources(panel._engine.build_prompt("blé", [])[1])  # same piece: no duplicate
+    assert panel.sources_list.count() == 1
+
+
+def test_chat_panel_without_model_shows_message_and_keeps_question(qtbot):
+    from regeste.gui.panels import ChatPanel
+    from regeste.pivot import Piece
+
+    panel = ChatPanel()
+    qtbot.addWidget(panel)
+    panel.refresh([Piece(id="a", transcription="texte")])
+    panel.input_edit.setText("question")
+    panel._on_send()
+    assert panel.status_label.text() and not panel.is_busy()

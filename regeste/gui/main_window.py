@@ -48,7 +48,7 @@ from regeste.pivot import build_pieces_from_registry, load_corpus, load_piece as
 
 from .import_dialog import BatchImportDialog
 from .import_worker import BatchImportWorker, list_importable_images
-from .panels import ExportPanel, LogPanel, QtLogHandler, ReviewPanel, SettingsPanel, TranslationPanel
+from .panels import ChatPanel, ExportPanel, LogPanel, QtLogHandler, ReviewPanel, SettingsPanel, TranslationPanel
 from .panels.export_panel import FORMAT_SPECS
 from .panels.log_panel import LOGGER_NAME
 from .worker import ExportWorker, ModelFetchWorker, ProjectArchiveWorker, TranscriptionWorker, start_worker
@@ -122,6 +122,11 @@ class MainWindow(QMainWindow):
         self._translation_same_as_ocr = True
         self._translation_prompt: str | None = None
         self._translation_parallel = False
+        self._chat_provider_config: ProviderConfig | None = None
+        self._chat_same_as_ocr = True
+        self._chat_same_as_translation = False
+        self._chat_prompt: str | None = None
+        self._chat_top_k = 8
         self._preprocessing = PreprocessOptions()
         self._resize_options = ResizeOptions()
         self._forced_language: str | None = None
@@ -207,6 +212,9 @@ class MainWindow(QMainWindow):
         self.translation_panel.translation_prompt_changed.connect(self._on_translation_prompt_changed)
         self.tabs.addTab(self._scrollable(self.translation_panel), _("Translation"))
         self._push_translation_context()
+        self.chat_panel = ChatPanel(corpus_getter=self.get_corpus)
+        self._chat_tab_widget = self._scrollable(self.chat_panel)
+        self.tabs.addTab(self._chat_tab_widget, _("Chat"))
         self.tabs.addTab(self._scrollable(self.export_panel), _("Export archive"))
         self._settings_tab_widget = self._scrollable(self.settings_panel)
         self.tabs.addTab(self._settings_tab_widget, _("Settings"))
@@ -220,6 +228,7 @@ class MainWindow(QMainWindow):
         self.project_changed.connect(self.export_panel.on_project_changed)
         self.project_changed.connect(self.review_panel.on_project_changed)
         self.project_changed.connect(self.translation_panel.on_project_changed)
+        self.project_changed.connect(self.chat_panel.on_project_changed)
 
         outer_layout.addWidget(self.tabs)
         self.setCentralWidget(central)
@@ -819,6 +828,11 @@ class MainWindow(QMainWindow):
         self._translation_same_as_ocr = config.translation_same_as_ocr
         self._translation_prompt = config.translation_prompt
         self._translation_parallel = config.translation_parallel
+        self._chat_provider_config = config.chat_provider
+        self._chat_same_as_ocr = config.chat_same_as_ocr
+        self._chat_same_as_translation = config.chat_same_as_translation
+        self._chat_prompt = config.chat_prompt
+        self._chat_top_k = config.chat_top_k
         self._push_translation_context()
         self._push_settings_context()
 
@@ -839,6 +853,11 @@ class MainWindow(QMainWindow):
             translation_provider=self._translation_provider_config,
             translation_same_as_ocr=self._translation_same_as_ocr,
             translation_parallel=self._translation_parallel,
+            chat_provider=self._chat_provider_config,
+            chat_same_as_ocr=self._chat_same_as_ocr,
+            chat_same_as_translation=self._chat_same_as_translation,
+            chat_prompt=self._chat_prompt,
+            chat_top_k=self._chat_top_k,
         )
 
     def _sync_settings_from_panel(self) -> None:
@@ -862,10 +881,16 @@ class MainWindow(QMainWindow):
         self._translation_same_as_ocr = panel.get_translation_same_as_ocr()
         self._translation_prompt = panel.get_translation_prompt()
         self._translation_parallel = panel.get_translation_parallel()
+        self._chat_provider_config = panel.get_chat_provider()
+        self._chat_same_as_ocr = panel.get_chat_same_as_ocr()
+        self._chat_same_as_translation = panel.get_chat_same_as_translation()
+        self._chat_prompt = panel.get_chat_prompt()
+        self._chat_top_k = panel.get_chat_top_k()
 
     def _on_settings_saved(self) -> None:
         self._sync_settings_from_panel()
         self._push_translation_context()
+        self._push_chat_context()
         self._persist_meta()
         self._apply_ui_language(self.settings_panel.get_ui_language())
 
@@ -877,6 +902,9 @@ class MainWindow(QMainWindow):
             self._sync_settings_from_panel()
             self._push_translation_context()
             self._persist_meta()
+        if self.tabs.widget(index) is self._chat_tab_widget:
+            self._push_chat_context()
+            self.chat_panel.refresh(self.get_corpus(force_reload=True))
         self._previous_tab_index = index
 
     def _on_language_selector_changed(self, index: int) -> None:
@@ -891,6 +919,7 @@ class MainWindow(QMainWindow):
             or self._menu_export_thread is not None
             or self.export_panel._thread is not None
             or self.translation_panel._thread is not None
+            or self.chat_panel.is_busy()
         )
 
     def get_corpus(self, *, force_reload: bool = False) -> list:
@@ -1022,6 +1051,11 @@ class MainWindow(QMainWindow):
             translation_prompt=self._translation_prompt,
             translation_parallel=self._translation_parallel,
             no_review=self.no_review_checkbox.isChecked(),
+            chat_provider=self._chat_provider_config,
+            chat_same_as_ocr=self._chat_same_as_ocr,
+            chat_same_as_translation=self._chat_same_as_translation,
+            chat_prompt=self._chat_prompt,
+            chat_top_k=self._chat_top_k,
         )
 
     def _persist_meta(self) -> None:
@@ -1039,6 +1073,15 @@ class MainWindow(QMainWindow):
         """Refresh the Settings > Costs tab from the registry's recorded per-file
         costs (None-safe: the tab shows its empty state when no project is open)."""
         self.settings_panel.set_cost_data(self._registry)
+
+    def _push_chat_context(self) -> None:
+        if self._chat_same_as_ocr:
+            provider = self._provider_config
+        elif self._chat_same_as_translation:
+            provider = self._effective_translation_provider()
+        else:
+            provider = self._chat_provider_config
+        self.chat_panel.set_chat_config(provider, self._chat_prompt, self._chat_top_k)
 
     def _push_translation_context(self) -> None:
         self.translation_panel.set_effective_translation_provider(

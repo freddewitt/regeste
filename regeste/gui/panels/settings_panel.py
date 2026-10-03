@@ -234,6 +234,7 @@ class SettingsPanel(QWidget):
         # Translation prompt, edited in the same kind of dialog (button in the
         # Translation sub-tab). `None` means "not customized" (default).
         self._translation_prompt_value: str | None = None
+        self._chat_prompt_value: str | None = None
         self._build_ui()
 
     def _build_ui(self) -> None:
@@ -242,6 +243,7 @@ class SettingsPanel(QWidget):
         self._sub_tabs = QTabWidget()
         self._sub_tabs.addTab(self._build_ocr_tab(), _("OCR"))
         self._sub_tabs.addTab(self._build_translation_tab(), _("Translation"))
+        self._sub_tabs.addTab(self._build_chat_tab(), _("Chat"))
         self._sub_tabs.addTab(self._build_general_tab(), _("General"))
         self._sub_tabs.addTab(self._build_costs_tab(), _("Costs"))
         outer.addWidget(self._sub_tabs)
@@ -624,6 +626,124 @@ class SettingsPanel(QWidget):
         """Restore saved translation prompt (None = use default)."""
         self._translation_prompt_value = prompt
 
+    # --- Chat sub-tab ------------------------------------------------------------------
+
+    def _build_chat_tab(self) -> QWidget:
+        tab = QWidget()
+        layout = QVBoxLayout(tab)
+        group = QGroupBox(_("Chat model"))
+        grid = QGridLayout(group)
+        self.chat_same_checkbox = QCheckBox(_("Use the same model as OCR"))
+        self.chat_same_checkbox.toggled.connect(self._on_chat_same_toggled)
+        grid.addWidget(self.chat_same_checkbox, 0, 0, 1, 2)
+        self.chat_same_translation_checkbox = QCheckBox(_("Use the same model as translation"))
+        self.chat_same_translation_checkbox.toggled.connect(self._on_chat_same_translation_toggled)
+        grid.addWidget(self.chat_same_translation_checkbox, 1, 0, 1, 2)
+        grid.addWidget(QLabel(_("Provider")), 2, 0)
+        self.chat_provider_combo = QComboBox()
+        self.chat_provider_combo.addItems(PROVIDER_KINDS)
+        self.chat_provider_combo.currentTextChanged.connect(self._on_chat_kind_changed)
+        grid.addWidget(self.chat_provider_combo, 2, 1)
+        grid.addWidget(QLabel(_("Server URL")), 3, 0)
+        self.chat_base_url_edit = QLineEdit()
+        grid.addWidget(self.chat_base_url_edit, 3, 1)
+        grid.addWidget(QLabel(_("API key")), 4, 0)
+        self.chat_api_key_edit = QLineEdit()
+        self.chat_api_key_edit.setEchoMode(QLineEdit.EchoMode.Password)
+        grid.addWidget(self.chat_api_key_edit, 4, 1)
+        grid.addWidget(QLabel(_("Model")), 5, 0)
+        self.chat_model_edit = QLineEdit()
+        grid.addWidget(self.chat_model_edit, 5, 1)
+        layout.addWidget(group)
+
+        search_group = QGroupBox(_("Search"))
+        search_layout = QHBoxLayout(search_group)
+        search_layout.addWidget(QLabel(_("Extracts sent to the model per question")))
+        self.chat_top_k_spin = QSpinBox()
+        self.chat_top_k_spin.setRange(1, 40)
+        self.chat_top_k_spin.setValue(8)
+        self.chat_top_k_spin.setToolTip(
+            _("More extracts give broader answers but cost more and need a larger model context.")
+        )
+        search_layout.addWidget(self.chat_top_k_spin)
+        search_layout.addStretch()
+        layout.addWidget(search_group)
+
+        prompt_group = QGroupBox(_("Chat instruction"))
+        prompt_layout = QVBoxLayout(prompt_group)
+        self.edit_chat_prompt_button = QPushButton(_("Edit chat instruction..."))
+        self.edit_chat_prompt_button.clicked.connect(self._on_edit_chat_prompt)
+        prompt_layout.addWidget(self.edit_chat_prompt_button)
+        layout.addWidget(prompt_group)
+        layout.addStretch()
+        return tab
+
+    def _on_chat_same_toggled(self, checked: bool) -> None:
+        if checked:
+            self.chat_same_translation_checkbox.setChecked(False)
+        self._update_chat_fields_enabled()
+
+    def _on_chat_same_translation_toggled(self, checked: bool) -> None:
+        if checked:
+            self.chat_same_checkbox.setChecked(False)
+        self._update_chat_fields_enabled()
+
+    def _update_chat_fields_enabled(self) -> None:
+        checked = self.chat_same_checkbox.isChecked() or self.chat_same_translation_checkbox.isChecked()
+        for widget in (
+            self.chat_provider_combo,
+            self.chat_base_url_edit,
+            self.chat_api_key_edit,
+            self.chat_model_edit,
+        ):
+            widget.setEnabled(not checked)
+
+    def _on_chat_kind_changed(self, kind: str) -> None:
+        # Pre-fill the usual local address (Ollama, LM Studio...) unless one is typed.
+        if not self.chat_base_url_edit.text().strip():
+            self.chat_base_url_edit.setText(DEFAULT_BASE_URLS.get(kind, ""))
+
+    def _on_edit_chat_prompt(self) -> None:
+        from regeste.chat import DEFAULT_CHAT_PROMPT
+
+        dialog = PromptEditDialog(
+            self,
+            title=_("Chat instruction"),
+            current_text=self._chat_prompt_value
+            if self._chat_prompt_value is not None
+            else DEFAULT_CHAT_PROMPT,
+            default_text=DEFAULT_CHAT_PROMPT,
+        )
+        if dialog.exec() == PromptEditDialog.DialogCode.Accepted:
+            text = dialog.text()
+            self._chat_prompt_value = None if text == DEFAULT_CHAT_PROMPT else text
+
+    def get_chat_same_as_ocr(self) -> bool:
+        return self.chat_same_checkbox.isChecked()
+
+    def get_chat_same_as_translation(self) -> bool:
+        return self.chat_same_translation_checkbox.isChecked()
+
+    def get_chat_provider(self) -> ProviderConfig | None:
+        """The separate chat provider, kept even while 'same as OCR' is on."""
+        model = self.chat_model_edit.text().strip()
+        base_url = self.chat_base_url_edit.text().strip() or None
+        api_key = self.chat_api_key_edit.text().strip() or None
+        if not (model or api_key):
+            return None
+        return ProviderConfig(
+            kind=self.chat_provider_combo.currentText(),
+            model=model,
+            base_url=base_url,
+            api_key=api_key,
+        )
+
+    def get_chat_prompt(self) -> str | None:
+        return self._chat_prompt_value
+
+    def get_chat_top_k(self) -> int:
+        return self.chat_top_k_spin.value()
+
     # --- General sub-tab ---------------------------------------------------------------
 
     def _build_general_tab(self) -> QWidget:
@@ -753,6 +873,11 @@ class SettingsPanel(QWidget):
         translation_provider: ProviderConfig | None,
         translation_same_as_ocr: bool,
         translation_parallel: bool = False,
+        chat_provider: ProviderConfig | None = None,
+        chat_same_as_ocr: bool = True,
+        chat_same_as_translation: bool = False,
+        chat_prompt: str | None = None,
+        chat_top_k: int = 8,
     ) -> None:
         """Repopulate every widget from the current config. Called once at startup
         with the app defaults, and again whenever a project is opened/resumed
@@ -776,6 +901,17 @@ class SettingsPanel(QWidget):
         self.translation_model_edit.setText(tp.model if tp else "")
         self.translation_parallel_checkbox.setChecked(translation_parallel)
         self._on_translation_same_toggled(self.translation_same_checkbox.isChecked())
+
+        self._chat_prompt_value = chat_prompt
+        self.chat_same_checkbox.setChecked(chat_same_as_ocr)
+        self.chat_same_translation_checkbox.setChecked(chat_same_as_translation and not chat_same_as_ocr)
+        cp = chat_provider
+        self.chat_provider_combo.setCurrentText(cp.kind if cp else "claude")
+        self.chat_base_url_edit.setText(cp.base_url if cp and cp.base_url else "")
+        self.chat_api_key_edit.setText(cp.api_key if cp and cp.api_key else "")
+        self.chat_model_edit.setText(cp.model if cp else "")
+        self.chat_top_k_spin.setValue(chat_top_k)
+        self._update_chat_fields_enabled()
 
         self.disable_resize_checkbox.setChecked(resize.disabled)
         self.override_max_px_checkbox.setChecked(resize.max_px_override is not None)

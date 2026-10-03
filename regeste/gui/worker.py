@@ -11,6 +11,7 @@ formats over a whole corpus) and to `translate_piece()` (network call) — see
 
 from __future__ import annotations
 
+import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Callable
@@ -25,6 +26,9 @@ from regeste.core.registry import Registry
 from regeste.core.transcriber import Transcriber, create_provider
 from regeste.pivot import Piece, save_piece
 from regeste.translation import TranslationProvider, translate_piece
+
+
+logger = logging.getLogger(__name__)
 
 
 class TranscriptionWorker(QObject):
@@ -285,3 +289,23 @@ def start_worker(worker: QObject) -> QThread:
         worker.succeeded.connect(thread.quit)
     worker.failed.connect(thread.quit)
     return thread
+
+
+class ChatWorker(QObject):
+    """Answers one chat question off the GUI thread."""
+
+    succeeded = Signal(object)  # ChatAnswer
+    failed = Signal(str)
+
+    def __init__(self, engine, question: str, history: list[tuple[str, str]]) -> None:
+        super().__init__()
+        self._engine = engine
+        self._question = question
+        self._history = history
+
+    def run(self) -> None:
+        try:
+            self.succeeded.emit(self._engine.ask(self._question, self._history))
+        except Exception as exc:  # noqa: BLE001 - any provider error is shown in the chat
+            logger.exception("Chat request failed")
+            self.failed.emit(str(exc))
