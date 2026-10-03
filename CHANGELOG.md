@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Simpler Review tab** — progress bar, "Show" filter (all / to check / done), zoomable image next to the editable transcription, one main "It's correct - next" button that moves on to the next piece (shortcuts Ctrl+Enter, Ctrl+L), expert tools (bulk validation, sampling) behind a "Tools" button.
+- **Model refresh button** moved next to the model selector; after a refresh the previously chosen model stays selected, or a message says it is no longer available (LM Studio/Ollama model swapped).
+
+### Security
+- **API keys in the OS keychain** — keys are no longer written to `regeste.json`; they are stored in the system keychain (`keyring`), once per provider and shared by all projects. Legacy clear-text keys are migrated on open. Without a keychain, the key is simply asked again.
+
+### Fixed
+- **Interruptible retry wait** — the Stop button is no longer delayed by the exponential backoff after a 429/5xx.
+- **Atomic exports** — all export formats (text, PDF, CSV, XLSX, XML, SQLite, HTML, ZIP) and the project archive are written to a temp file then renamed, so an interrupted export never leaves a truncated file (`regeste/core/atomic.py`).
+
 ## [0.2.3] – 2026-08-25
 
 ### Added

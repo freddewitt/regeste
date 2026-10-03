@@ -986,3 +986,72 @@ def test_settings_panel_keeps_translation_choice_when_same_checked(qtbot):
     # "Same" is on, yet the separate choice is still there and returned.
     assert panel.get_translation_same_as_ocr() is True
     assert panel.get_translation_provider() == ProviderConfig(kind="gemini", model="trad-model")
+
+
+def _three_pending(source_dir):
+    for name in ("a.jpg", "b.jpg", "c.jpg"):
+        _validated_piece(source_dir, name, field_validations={}, confidence_score=0.5)
+
+
+def _open_review(qtbot, tmp_path, builder):
+    source_dir = tmp_path / "source"
+    source_dir.mkdir()
+    builder(source_dir)
+    window = MainWindow()
+    qtbot.addWidget(window)
+    window.set_source_dir(source_dir)
+    panel = window.review_panel
+    panel._test_window = window  # keep the window (and its child panel) alive
+    return panel, source_dir
+
+
+def test_review_validate_moves_to_next_piece_and_updates_progress(qtbot, tmp_path):
+    panel, _src = _open_review(qtbot, tmp_path, _three_pending)
+    assert panel.progress_label.text() == "0 of 3 checked"
+    panel.piece_list.setCurrentRow(0)
+    first = panel._current.id
+
+    panel._on_group_validate_clicked()
+
+    assert panel._current is not None and panel._current.id != first
+    assert panel.progress_label.text() == "1 of 3 checked"
+    assert panel.progress_bar.value() == 1
+
+
+def test_review_everything_checked_message_and_stays_on_last_piece(qtbot, tmp_path):
+    panel, _src = _open_review(
+        qtbot, tmp_path, lambda d: _validated_piece(d, field_validations={})
+    )
+    panel.piece_list.setCurrentRow(0)
+    panel._on_group_validate_clicked()
+    assert panel.progress_label.text() == "Everything has been checked."
+    assert panel._current is not None
+
+
+def test_review_filter_to_check_hides_done_pieces(qtbot, tmp_path):
+    def build(d):
+        _three_pending(d)
+        _validated_piece(d, "done.jpg")
+
+    panel, _src = _open_review(qtbot, tmp_path, build)
+    assert len(panel._pieces) == 4
+    panel.filter_combo.setCurrentIndex(panel.filter_combo.findData("to_check"))
+    assert len(panel._pieces) == 3
+    panel.filter_combo.setCurrentIndex(panel.filter_combo.findData("done"))
+    assert [p.id for p in panel._pieces] == ["done.jpg"]
+    assert panel.progress_label.text() == "1 of 4 checked"
+
+
+def test_review_validate_button_label_follows_edits(qtbot, tmp_path):
+    panel, _src = _open_review(qtbot, tmp_path, _three_pending)
+    panel.piece_list.setCurrentRow(0)
+    assert panel.validate_button.text() == "It's correct - next"
+    panel.transcription_display.setPlainText("modifié")
+    assert panel.validate_button.text() == "Save my corrections - next"
+
+
+def test_review_expert_tools_hidden_until_opened(qtbot, tmp_path):
+    panel, _src = _open_review(qtbot, tmp_path, _three_pending)
+    assert panel.bulk_group.isHidden()
+    panel.tools_button.setChecked(True)
+    assert not panel.bulk_group.isHidden()
