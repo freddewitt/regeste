@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] – 2026-10-03
+
 ### Changed
 - **Simpler Review tab** — progress bar, "Show" filter (all / to check / done), zoomable image next to the editable transcription, one main "It's correct - next" button that moves on to the next piece (shortcuts Ctrl+Enter, Ctrl+L), expert tools (bulk validation, sampling) behind a "Tools" button.
 - **Model refresh button** moved next to the model selector; after a refresh the previously chosen model stays selected, or a message says it is no longer available (LM Studio/Ollama model swapped).
+
+- **Translations** — 14 new strings translated in all 9 languages (Review tab, model refresh message); 0 fuzzy, 0 untranslated.
+- **New dependency** — `keyring>=25.0.0` (also bundled in the PyInstaller spec).
 
 ### Security
 - **API keys in the OS keychain** — keys are no longer written to `regeste.json`; they are stored in the system keychain (`keyring`), once per provider and shared by all projects. Legacy clear-text keys are migrated on open. Without a keychain, the key is simply asked again.
