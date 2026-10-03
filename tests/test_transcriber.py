@@ -202,7 +202,7 @@ def test_transcriber_records_an_error_without_interrupting_the_run(tmp_path):
 
 
 def test_transcriber_retries_on_retryable_error_then_succeeds(tmp_path, monkeypatch):
-    monkeypatch.setattr("regeste.core.transcriber.time.sleep", lambda _: None)
+    monkeypatch.setattr("regeste.core.transcriber.INITIAL_DELAY_SECONDS", 0)
     _image(tmp_path, "a.jpg")
     registry = Registry.new(tmp_path, meta={}, file_names=["a.jpg"])
     batch_id = tmp_path.name
@@ -286,3 +286,22 @@ def test_transcriber_custom_prompt_wins_over_mode(tmp_path):
     config.transcription_mode = TranscriptionMode.HYPOTHESES
     transcriber = Transcriber(config, FakeProvider(), system_prompt="Custom prompt.")
     assert transcriber.system_prompt == "Custom prompt."
+
+
+def test_retry_wait_is_interrupted_by_stop(tmp_path, monkeypatch):
+    import time as _time
+
+    monkeypatch.setattr("regeste.core.transcriber.INITIAL_DELAY_SECONDS", 30)
+    error_429 = Exception("rate limited")
+    error_429.status_code = 429
+    provider = FakeProvider(responses=[error_429, error_429])
+    transcriber = Transcriber(_config(tmp_path), provider)
+    transcriber.request_stop()
+
+    start = _time.monotonic()
+    try:
+        transcriber._call_with_retry(b"x")
+    except Exception:  # noqa: BLE001
+        pass
+    assert _time.monotonic() - start < 5
+    assert provider.calls == 1

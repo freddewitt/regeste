@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import threading
-import time
 from collections.abc import Callable
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -199,7 +198,9 @@ class Transcriber:
                     "Retryable error on attempt %d/%d (%s), backing off %.1fs",
                     attempt + 1, MAX_ATTEMPTS, exc, delay,
                 )
-                time.sleep(delay)
+                # Interruptible wait: the Stop button must not be delayed by a long backoff.
+                if self._stop.wait(delay):
+                    raise
                 delay = min(delay * 2, MAX_DELAY_SECONDS)
         raise RuntimeError("unreachable")  # pragma: no cover
 

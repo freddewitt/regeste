@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from regeste.core.atomic import atomic_output, atomic_write_text
+
 from pathlib import Path
 
 from regeste.pivot import Piece, global_status
@@ -9,6 +11,7 @@ from regeste.pivot import Piece, global_status
 from .common import filter_pieces
 
 
+@atomic_output
 def export_markdown(
     pieces: list[Piece],
     output_path: Path,
@@ -57,7 +60,5 @@ def export_markdown_obsidian(
         translation = (piece.translations or {}).get(target_language) if target_language else None
         if translation:
             body += ["", f"## Traduction ({target_language})", "", translation.text]
-        (output_dir / f"{piece.id}.md").write_text(
-            "\n".join(frontmatter + body) + "\n", encoding="utf-8"
-        )
+        atomic_write_text(output_dir / f"{piece.id}.md", "\n".join(frontmatter + body) + "\n")
     return output_dir

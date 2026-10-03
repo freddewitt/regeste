@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from regeste.core.atomic import atomic_output
+
 import csv
 from pathlib import Path
 
@@ -39,6 +41,7 @@ def _translation_text(piece: Piece, target_language: str | None) -> str:
     return translation.text if translation else ""
 
 
+@atomic_output
 def export_csv_light(
     pieces: list[Piece],
     output_path: Path,
@@ -59,6 +62,7 @@ def export_csv_light(
     return output_path
 
 
+@atomic_output
 def export_csv_full(
     pieces: list[Piece],
     output_path: Path,

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from regeste.core.atomic import atomic_output
+
 import sqlite3
 from pathlib import Path
 
@@ -10,6 +12,7 @@ from regeste.pivot import Piece, global_status
 from .common import filter_pieces
 
 
+@atomic_output
 def export_sqlite(
     pieces: list[Piece],
     output_path: Path,

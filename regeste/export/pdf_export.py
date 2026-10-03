@@ -6,6 +6,8 @@ Reuses the CJK-aware font selection from `core/export.py` rather than duplicatin
 
 from __future__ import annotations
 
+from regeste.core.atomic import atomic_output
+
 import textwrap
 from pathlib import Path
 
@@ -16,6 +18,7 @@ from regeste.pivot import Piece
 from .common import filter_pieces
 
 
+@atomic_output
 def export_pdf(
     pieces: list[Piece],
     output_path: Path,

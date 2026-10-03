@@ -5,6 +5,8 @@ but reuses the same XLSX helpers (`export/xlsx_common.py`).
 
 from __future__ import annotations
 
+from regeste.core.atomic import atomic_output
+
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -33,6 +35,7 @@ DETAIL_HEADERS = [
 SUMMARY_HEADERS = ["fonds/série", "total", "% validé", "% à vérifier/brouillon", "% rejeté"]
 
 
+@atomic_output
 def export_review_journal(
     pieces: list[Piece], output_path: Path, *, generated_at: str | None = None
 ) -> Path:

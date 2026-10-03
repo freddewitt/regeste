@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from regeste.core.atomic import atomic_output
+
 import json
 import zipfile
 from pathlib import Path
@@ -19,6 +21,7 @@ _README = """# Export Regeste
 """
 
 
+@atomic_output
 def export_zip(
     pieces: list[Piece],
     output_path: Path,

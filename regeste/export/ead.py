@@ -4,6 +4,8 @@ grouped by fonds/série/sous-série/dossier. Field correspondence: `export/mappi
 
 from __future__ import annotations
 
+from regeste.core.atomic import atomic_output
+
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -14,6 +16,7 @@ from .common import available_languages, filter_pieces, hierarchy_path
 _LEVEL_BY_DEPTH = {1: "series", 2: "subseries", 3: "file"}
 
 
+@atomic_output
 def export_ead(
     pieces: list[Piece],
     output_path: Path,

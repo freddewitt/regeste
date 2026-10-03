@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from regeste.core.atomic import atomic_output, atomic_write_text
+
 import json
 import textwrap
 from dataclasses import dataclass
@@ -114,6 +116,7 @@ def _render_json(entries: list[tuple[str, FileEntry]], *, hypotheses: bool = Fal
     return json.dumps(data, indent=2, ensure_ascii=False)
 
 
+@atomic_output
 def _render_pdf(
     entries: list[tuple[str, FileEntry]],
     source_dir: Path,
@@ -233,7 +236,7 @@ def export_registry(
         combined_dir.mkdir(parents=True, exist_ok=True)
         for fmt in options.formats & set(_TEXT_RENDERERS):
             path = combined_dir / f"{project_name}.{fmt}"
-            path.write_text(_TEXT_RENDERERS[fmt](entries, hypotheses=hypotheses), encoding="utf-8")
+            atomic_write_text(path, _TEXT_RENDERERS[fmt](entries, hypotheses=hypotheses))
             written_files.append(path)
         if "pdf" in options.formats:
             path = combined_dir / f"{project_name}.pdf"
@@ -247,8 +250,8 @@ def export_registry(
             base = Path(name).stem
             for fmt in options.formats & set(_TEXT_RENDERERS):
                 path = per_file_dir / f"{base}.{fmt}"
-                path.write_text(
-                    _TEXT_RENDERERS[fmt]([(name, entry)], hypotheses=hypotheses), encoding="utf-8"
+                atomic_write_text(
+                    path, _TEXT_RENDERERS[fmt]([(name, entry)], hypotheses=hypotheses)
                 )
                 written_files.append(path)
             if "pdf" in options.formats:

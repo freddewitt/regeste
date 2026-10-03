@@ -4,6 +4,8 @@ confidence, auto-filters, and a thumbnail image per row.
 
 from __future__ import annotations
 
+from regeste.core.atomic import atomic_output
+
 import re
 from pathlib import Path
 
@@ -33,6 +35,7 @@ HEADERS = [
 ]
 
 
+@atomic_output
 def export_xlsx(
     pieces: list[Piece],
     output_path: Path,

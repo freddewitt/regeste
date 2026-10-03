@@ -5,6 +5,8 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from regeste.core.atomic import atomic_output
+
 from regeste.pivot import Piece
 
 from .common import available_languages, filter_pieces, hierarchy_path
@@ -16,6 +18,7 @@ ET.register_namespace("dc", DC_NS)
 ET.register_namespace("oai_dc", OAI_DC_NS)
 
 
+@atomic_output
 def export_dublin_core(
     pieces: list[Piece],
     output_path: Path,

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from regeste.core.atomic import atomic_output
+
 import json
 from pathlib import Path
 
@@ -54,6 +56,7 @@ render(pieces);
 """
 
 
+@atomic_output
 def export_html(
     pieces: list[Piece],
     output_path: Path,

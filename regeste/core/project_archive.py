@@ -13,6 +13,8 @@ logic.
 
 from __future__ import annotations
 
+from regeste.core.atomic import atomic_output
+
 import copy
 import json
 import zipfile
@@ -35,6 +37,7 @@ def _sanitized_meta(meta: dict) -> dict:
     return sanitized
 
 
+@atomic_output
 def export_project_archive(
     registry: Registry,
     output_path: Path,

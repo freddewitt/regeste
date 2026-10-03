@@ -13,7 +13,7 @@ dist/
 .ruff_cache/
 
 # OS
-.DS_Store
+*.DS_Store
 
 # Regeste project files — may contain API keys in plain text; never commit
 regeste.json

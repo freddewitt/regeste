@@ -6,6 +6,8 @@ from __future__ import annotations
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from regeste.core.atomic import atomic_path
+
 from regeste.pivot import Piece
 
 from .common import available_languages, filter_pieces
@@ -67,5 +69,6 @@ def export_mets(
 
         tree = ET.ElementTree(mets)
         ET.indent(tree, space="  ")
-        tree.write(output_dir / f"{piece.id}.xml", encoding="utf-8", xml_declaration=True)
+        with atomic_path(output_dir / f"{piece.id}.xml") as tmp:
+            tree.write(tmp, encoding="utf-8", xml_declaration=True)
     return output_dir
