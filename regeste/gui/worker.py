@@ -6,7 +6,7 @@ own `QThread`; signals are queued back to the GUI thread automatically by Qt.
 
 Same rationale applies to the pivot exporters (I/O-bound, one run can cover 12
 formats over a whole corpus) and to `translate_piece()` (network call) — see
-`ExportWorker`/`TranslationWorker` below.
+`ExportWorker`/`TranslationBatchWorker` below.
 """
 
 from __future__ import annotations
@@ -139,49 +139,6 @@ class ProjectArchiveWorker(QObject):
             self.failed.emit(str(exc))
             return
         self.finished.emit(self._output_path)
-
-
-class TranslationWorker(QObject):
-    """Runs `translate_piece()` off the GUI thread (network call)."""
-
-    succeeded = Signal(object)  # Piece, mutated in place with the new translation
-    failed = Signal(str)
-
-    def __init__(
-        self,
-        piece: Piece,
-        target_language: str,
-        provider: TranslationProvider,
-        model: str,
-        *,
-        glossary: dict[str, str] | None = None,
-        source_language: str = "",
-        template: str | None = None,
-    ) -> None:
-        super().__init__()
-        self._piece = piece
-        self._target_language = target_language
-        self._provider = provider
-        self._model = model
-        self._glossary = glossary
-        self._source_language = source_language
-        self._template = template
-
-    def run(self) -> None:
-        try:
-            translate_piece(
-                self._piece,
-                self._target_language,
-                self._provider,
-                self._model,
-                glossary=self._glossary,
-                source_language=self._source_language,
-                template=self._template,
-            )
-        except Exception as exc:  # noqa: BLE001 - surfaced via `failed`, never a crash (incl. TranslationBlocked)
-            self.failed.emit(str(exc))
-            return
-        self.succeeded.emit(self._piece)
 
 
 class TranslationBatchWorker(QObject):

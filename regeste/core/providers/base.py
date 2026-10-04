@@ -56,16 +56,6 @@ def parse_text_description(raw: str) -> tuple[str, str]:
     return text, description
 
 
-def parse_language(raw: str) -> str:
-    """Return the `## LANGUE` section (detected document language), or "" if absent.
-
-    Optional section of the same output contract: a model that omits it (or an
-    older prompt without it) simply yields "".
-    """
-    _, _, language = parse_all(raw)
-    return language
-
-
 @dataclass(frozen=True)
 class ModelInfo:
     """A vision model offered by a provider."""
